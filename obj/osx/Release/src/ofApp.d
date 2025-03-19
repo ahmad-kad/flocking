@@ -441,11 +441,10 @@ obj/osx/Release/src/ofApp.o: \
   /Users/ahmadkaddoura/Downloads/of_v0.12.0_osx_release/addons/ofxGui/src/ofxLabel.h \
   /Users/ahmadkaddoura/Downloads/of_v0.12.0_osx_release/addons/ofxGui/src/ofxColorPicker.h \
   /Users/ahmadkaddoura/Downloads/of_v0.12.0_osx_release/addons/ofxGui/src/ofxPanel.h \
+  /Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/FlockSystem.h \
+  /Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/Boid.h \
   /Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/Particle.h \
-  /Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/ParticleEmitter.h \
-  /Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/TransformObject.h \
-  /Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/ParticleSystem.h \
-  /Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/Boid.h
+  /Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/ConfigManager.h
 /Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/ofApp.h:
 /Users/ahmadkaddoura/Downloads/of_v0.12.0_osx_release/libs/openFrameworks/ofMain.h:
 /Users/ahmadkaddoura/Downloads/of_v0.12.0_osx_release/libs/openFrameworks/utils/ofConstants.h:
@@ -887,8 +886,7 @@ obj/osx/Release/src/ofApp.o: \
 /Users/ahmadkaddoura/Downloads/of_v0.12.0_osx_release/addons/ofxGui/src/ofxLabel.h:
 /Users/ahmadkaddoura/Downloads/of_v0.12.0_osx_release/addons/ofxGui/src/ofxColorPicker.h:
 /Users/ahmadkaddoura/Downloads/of_v0.12.0_osx_release/addons/ofxGui/src/ofxPanel.h:
-/Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/Particle.h:
-/Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/ParticleEmitter.h:
-/Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/TransformObject.h:
-/Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/ParticleSystem.h:
+/Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/FlockSystem.h:
 /Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/Boid.h:
+/Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/Particle.h:
+/Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/ConfigManager.h:

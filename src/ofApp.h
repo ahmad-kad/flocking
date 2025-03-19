@@ -2,9 +2,8 @@
 
 #include "ofMain.h"
 #include "ofxGui.h"
-#include "Particle.h"
-#include "ParticleEmitter.h"
-#include "Boid.h"
+#include "FlockSystem.h"
+#include "ConfigManager.h"
 
 class ofApp : public ofBaseApp{
 
@@ -27,54 +26,86 @@ class ofApp : public ofBaseApp{
 
 		ofEasyCam    cam;
 
-		// some simple sliders to play with parameters
-		//
+		// GUI panels
 		bool bHide;
-		ofxPanel gui;
+		ofxPanel flockingGui;
+		ofxPanel globalGui;
+		ofxPanel environmentGui;
+		ofxPanel debugGui;
+		ofxPanel presetsGui;
 		
-		// Legacy particle system parameters
-		ofxFloatSlider gravity;
-		ofxFloatSlider damping;
-		ofxFloatSlider radius;
-		ofxVec3Slider velocity;
-		ofxFloatSlider lifespan;
-		ofxFloatSlider rate;
+		// Flocking system
+		FlockSystem flockSystem;
+		bool simulationPaused;
 		
-		// Flocking behavior parameters
+		// Basic flocking parameters
 		ofxFloatSlider separationWeight;
 		ofxFloatSlider alignmentWeight;
 		ofxFloatSlider cohesionWeight;
+		ofxFloatSlider maxSpeed;
+		ofxFloatSlider minSpeed;
+		ofxFloatSlider maxForce;
 		ofxFloatSlider neighborhoodRadius;
 		ofxFloatSlider separationRadius;
-		ofxFloatSlider maxSpeed;
-		ofxFloatSlider maxForce;
-		ofxToggle seekTarget;
-		ofxIntSlider numBoids;
+		ofxFloatSlider boundaryWeight;
+		ofxIntSlider   boidCount;
+		ofxToggle      targetEnabled;
+		ofxFloatSlider targetWeight;
 		
-		// Flocking system
-		FlockingSystem flockingSystem;
+		// Global system parameters
+		ofxFloatSlider individualismFactor;
+		ofxFloatSlider systemChaos;
+		ofxFloatSlider boidsVariability;
+		ofxIntSlider flockMode;
 		
-		// Simulation control
-		bool simulationRunning;
+		// Color-based flocking
+		ofxToggle colorBasedFlocking;
+		ofxFloatSlider colorInfluence;
+		ofxFloatSlider colorSimilarityThreshold;
 		
-		// Mouse interaction
-		ofVec3f getMouseWorldPosition();
+		// Debug visualization
+		ofxToggle showDebug;
+		ofxToggle showVelocities;
+		ofxToggle showNeighborhoods;
+		ofxToggle showForces;
+		ofxToggle showGrid;
 		
-		// Legacy particle system (can be removed if no longer needed)
-		ParticleEmitter emitter;
-		ParticleSystem particleSystem;
-		GravityForce* gravityForce;
-		TurbulenceForce* turbulenceForce;
+		// Environment parameters
+		ofParameter<ofColor> backgroundColor;
+		ofxButton resetButton;
+		ofxButton spawnBoidsButton;
+		ofxIntSlider spawnCount;
+		ofxButton loadMeshButton;
+		string meshPath;
+		ofMesh boidMesh;
+		bool customMeshLoaded;
 		
-		// Turbulence force parameters
-		ofxFloatSlider turbulenceMinX;
-		ofxFloatSlider turbulenceMaxX;
-		ofxFloatSlider turbulenceMinY;
-		ofxFloatSlider turbulenceMaxY;
-		ofxFloatSlider turbulenceMinZ;
-		ofxFloatSlider turbulenceMaxZ;
-		
-		// UI states
-		bool showParticleSystem;
-		bool showFlockingSystem;
+		// Target
+		ofVec3f targetPosition;
+		bool targetMoving;
+		float targetPathRadius;
+		float targetTime;
+        
+        // Preset management
+        ConfigManager configManager;
+        ofParameter<string> presetNameParam;
+        ofxLabel presetLabel;
+        vector<string> presetNames;
+        int selectedPresetIndex;
+        ofxButton loadPresetButton;
+        ofxButton savePresetButton;
+
+		// Helper methods
+		void resetSimulation();
+		void spawnBoids();
+		void loadBoidMesh();
+		void updateFlockMode();
+		string getFlockModeDescription(int mode);
+        
+        // Preset methods
+        void loadPreset();
+        void savePreset();
+        void updateUIFromPreset(const FlockingPreset& preset);
+        FlockingPreset createPresetFromUI();
+        void positionGUIPanels();
 };

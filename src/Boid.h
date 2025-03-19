@@ -6,66 +6,48 @@
 class Boid : public Particle {
 public:
     Boid();
-    ~Boid();
     
-    // Flocking behavior functions
+    // Flocking behavior parameters
+    float separationWeight;
+    float alignmentWeight;
+    float cohesionWeight;
+    float neighborhoodRadius;
+    float separationRadius;
+    float maxSpeed;
+    float minSpeed;   
+    float maxForce;
+    
+    // Individualistic characteristics
+    float uniqueness;  // How much this boid deviates from group behavior (0-1)
+    ofColor personalColor;  // Individual color 
+    float size;        // Individual size
+    float energyLevel; // Affects movement patterns
+    
+    // Flocking behavior methods
     ofVec3f separate(vector<Boid*> neighbors);
     ofVec3f align(vector<Boid*> neighbors);
     ofVec3f cohere(vector<Boid*> neighbors);
     ofVec3f seek(ofVec3f target);
+    ofVec3f wander(); // Random individualistic movement
+    
+    // Apply flocking behaviors
     void flock(vector<Boid*> boids);
-    void update();
+    
+    // Apply steering force
+    void applyForce(ofVec3f force);
+    
+    // Override draw method
     void draw();
+    void drawDebug(bool showVelocity, bool showNeighborhood, bool showForces);
     
-    // Perception parameters
-    float separationWeight;
-    float alignmentWeight;
-    float cohesionWeight;
-    float neighborhoodRadius;
-    float separationRadius;
+    // Override integrate method to include max speed
+    void integrate();
     
-    // Maximum force and speed limits
-    float maxForce;
-    float maxSpeed;
-    
-    // Calculated forces
+    // Force vectors for debugging
     ofVec3f separationForce;
     ofVec3f alignmentForce;
     ofVec3f cohesionForce;
     ofVec3f seekForce;
-    
-    // Utility methods
-    vector<Boid*> getNeighbors(vector<Boid*> allBoids);
-    bool isInFieldOfView(Boid* other);
-};
-
-// Flocking system to manage boids
-class FlockingSystem {
-public:
-    FlockingSystem();
-    ~FlockingSystem();
-    
-    void update();
-    void draw();
-    void addBoid(ofVec3f position, ofVec3f velocity);
-    void removeBoid(int index);
-    
-    // Flock parameters
-    float separationWeight;
-    float alignmentWeight;
-    float cohesionWeight;
-    float neighborhoodRadius;
-    float separationRadius;
-    float maxSpeed;
-    float maxForce;
-    
-    // Optional target seeking
-    bool seekTarget;
-    ofVec3f target;
-    
-    vector<Boid*> boids;
-    
-    // Spatial partitioning for neighbor search optimization
-    // This is a simplistic approach - could be expanded with octrees or grids
-    vector<Boid*> getNeighbors(Boid* boid, float radius);
+    ofVec3f wanderForce;
+    ofVec3f boundaryForce;
 }; 
