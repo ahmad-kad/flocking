@@ -16,6 +16,301 @@ Craig Reynolds' 1987 "Boids" model identified three primary rules that generate 
 
 These simple rules, when applied to many individual agents, create complex emergent behaviors that resemble natural flocks, schools, and herds.
 
+## Technical Implementation
+
+### Core Algorithm: Reynolds' Boids
+
+The flocking simulation is based on Craig Reynolds' Boids algorithm, implemented as a set of steering behaviors. Each boid (bird-oid object) follows three core rules:
+
+#### 1. Separation
+
+Separation is a steering behavior that prevents crowding by making boids steer away from nearby neighbors. The mathematical formula for the separation force is:
+
+```
+steer = (0, 0, 0)
+count = 0
+
+for each neighbor in neighbors:
+    if distance(boid, neighbor) < separationRadius:
+        diff = boid.position - neighbor.position
+        diff.normalize()
+        diff /= distance(boid, neighbor)  // Weight by distance (closer = stronger)
+        steer += diff
+        count++
+
+if count > 0:
+    steer /= count
+
+if steer.length() > 0:
+    steer.normalize()
+    steer *= maxSpeed
+    steer -= boid.velocity
+    steer.limit(maxForce)
+
+return steer * separationWeight
+```
+
+**Code Implementation:**
+```cpp
+ofVec3f Boid::separate(vector<Boid*> neighbors) {
+    float desiredSeparation = separationRadius;
+    ofVec3f steer(0, 0, 0);
+    int count = 0;
+    
+    // Check each neighbor
+    for (int i = 0; i < neighbors.size(); i++) {
+        Boid* other = neighbors[i];
+        
+        // Calculate distance from current boid to neighbor
+        float d = position.distance(other->position);
+        
+        // If within separation radius
+        if ((d > 0) && (d < desiredSeparation)) {
+            // Calculate vector pointing away from neighbor
+            ofVec3f diff = position - other->position;
+            diff.normalize();
+            
+            // Weight by distance (closer = stronger)
+            diff /= d;
+            
+            // Add to steering vector
+            steer += diff;
+            count++;
+        }
+    }
+    
+    // Average of steering vectors
+    if (count > 0) {
+        steer /= count;
+    }
+    
+    // Implement Reynolds: Steering = Desired - Velocity
+    if (steer.length() > 0) {
+        steer.normalize();
+        steer *= maxSpeed;
+        steer -= velocity;
+        steer.limit(maxForce);
+    }
+    
+    return steer;
+}
+```
+
+#### 2. Alignment
+
+Alignment is a steering behavior that causes boids to steer towards the average heading of neighboring boids. The mathematical formula for the alignment force is:
+
+```
+sum = (0, 0, 0)
+count = 0
+
+for each neighbor in neighbors:
+    sum += neighbor.velocity
+    count++
+
+if count > 0:
+    sum /= count             // Average velocity
+    sum.normalize()
+    sum *= maxSpeed
+    steer = sum - boid.velocity
+    steer.limit(maxForce)
+    return steer
+else:
+    return (0, 0, 0)
+```
+
+**Code Implementation:**
+```cpp
+ofVec3f Boid::align(vector<Boid*> neighbors) {
+    ofVec3f sum(0, 0, 0);
+    int count = 0;
+    
+    // Sum all velocities and count number of neighbors
+    for (int i = 0; i < neighbors.size(); i++) {
+        Boid* other = neighbors[i];
+        sum += other->velocity;
+        count++;
+    }
+    
+    if (count > 0) {
+        // Calculate average velocity
+        sum /= count;
+        
+        // Implement Reynolds: Steering = Desired - Velocity
+        sum.normalize();
+        sum *= maxSpeed;
+        ofVec3f steer = sum - velocity;
+        steer.limit(maxForce);
+        return steer;
+    }
+    else {
+        // If no neighbors, maintain current velocity
+        return ofVec3f(0, 0, 0);
+    }
+}
+```
+
+#### 3. Cohesion
+
+Cohesion is a behavior that causes boids to steer towards the average position of neighboring boids. The mathematical formula for the cohesion force is:
+
+```
+sum = (0, 0, 0)
+count = 0
+
+for each neighbor in neighbors:
+    sum += neighbor.position
+    count++
+
+if count > 0:
+    sum /= count                 // Calculate center of mass
+    return seek(sum)             // Steer towards center
+else:
+    return (0, 0, 0)
+```
+
+**Code Implementation:**
+```cpp
+ofVec3f Boid::cohere(vector<Boid*> neighbors) {
+    ofVec3f sum(0, 0, 0);
+    int count = 0;
+    
+    // Sum all positions and count number of neighbors
+    for (int i = 0; i < neighbors.size(); i++) {
+        Boid* other = neighbors[i];
+        sum += other->position;
+        count++;
+    }
+    
+    if (count > 0) {
+        // Calculate average position (center of mass)
+        sum /= count;
+        
+        // Create vector pointing from boid towards center of mass
+        return seek(sum);
+    }
+    else {
+        // If no neighbors, maintain current direction
+        return ofVec3f(0, 0, 0);
+    }
+}
+```
+
+#### Seek Behavior
+
+The `seek` function is a utility method used by other behaviors (such as cohesion) to generate steering forces towards a target point:
+
+```cpp
+ofVec3f Boid::seek(ofVec3f target) {
+    // Create desired velocity
+    ofVec3f desired = target - position;
+    
+    // Scale to maximum speed
+    float d = desired.length();
+    desired.normalize();
+    
+    // If we're close to target, slow down (arrival behavior)
+    if (d < 4.0) {
+        float m = ofMap(d, 0, 4.0, 0, maxSpeed);
+        desired *= m;
+    }
+    else {
+        desired *= maxSpeed;
+    }
+    
+    // Reynolds: Steering = Desired - Velocity
+    ofVec3f steer = desired - velocity;
+    steer.limit(maxForce);
+    
+    return steer;
+}
+```
+
+### Spatial Partitioning
+
+For efficient neighbor detection (which is a performance bottleneck in flocking simulations), the system implements a grid-based spatial partitioning algorithm:
+
+```cpp
+// Initialize 3D grid in FlockSystem constructor
+gridResolution = 10;
+grid.resize(gridResolution);
+for (int x = 0; x < gridResolution; x++) {
+    grid[x].resize(gridResolution);
+    for (int y = 0; y < gridResolution; y++) {
+        grid[x][y].resize(gridResolution);
+    }
+}
+
+// Update grid cell assignments
+void FlockSystem::updateSpatialGrid() {
+    // Clear all cells
+    for (int x = 0; x < gridResolution; x++) {
+        for (int y = 0; y < gridResolution; y++) {
+            for (int z = 0; z < gridResolution; z++) {
+                grid[x][y][z].boids.clear();
+            }
+        }
+    }
+    
+    // Add boids to cells
+    for (int i = 0; i < boids.size(); i++) {
+        ofVec3f gridPos = worldToGrid(boids[i]->position);
+        int gx = gridPos.x;
+        int gy = gridPos.y;
+        int gz = gridPos.z;
+        
+        // Make sure coordinates are within grid bounds
+        if (gx >= 0 && gx < gridResolution &&
+            gy >= 0 && gy < gridResolution &&
+            gz >= 0 && gz < gridResolution) {
+            grid[gx][gy][gz].boids.push_back(boids[i]);
+        }
+    }
+}
+
+// Efficient neighbor searching
+vector<Boid*> FlockSystem::getNeighbors(Boid* boid, float radius) {
+    vector<Boid*> neighbors;
+    
+    // Convert boid position to grid coordinates
+    ofVec3f gridPos = worldToGrid(boid->position);
+    int gx = gridPos.x;
+    int gy = gridPos.y;
+    int gz = gridPos.z;
+    
+    // Calculate cell search radius based on neighbor radius
+    int cellRadius = ceil(radius / cellSize);
+    
+    // Search neighboring cells
+    for (int x = max(0, gx - cellRadius); x <= min(gridResolution - 1, gx + cellRadius); x++) {
+        for (int y = max(0, gy - cellRadius); y <= min(gridResolution - 1, gy + cellRadius); y++) {
+            for (int z = max(0, gz - cellRadius); z <= min(gridResolution - 1, gz + cellRadius); z++) {
+                Cell* cell = getCell(x, y, z);
+                if (cell) {
+                    // Check all boids in this cell
+                    for (int i = 0; i < cell->boids.size(); i++) {
+                        Boid* other = cell->boids[i];
+                        
+                        // Don't add self to neighbors
+                        if (other != boid) {
+                            // Check actual distance
+                            float distance = boid->position.distance(other->position);
+                            if (distance < radius) {
+                                neighbors.push_back(other);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    return neighbors;
+}
+```
+
+This grid-based approach reduces the computational complexity of neighbor finding from O(n²) to O(n) by only checking boids in nearby grid cells rather than all boids in the simulation.
+
 ## Parameters Explained
 
 ### Basic Flocking Parameters

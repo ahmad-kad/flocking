@@ -1,0 +1,40 @@
+# Build directories
+/bin/
+/obj/
+/out/
+
+# Executable files
+*.exe
+*.out
+*.app
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# IDE specific files
+*.vscode/
+*.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# OpenFrameworks specific files
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+
+# Other
+*.userprefs
+*.swp
+.cursor/
+
+
+3D Flocking Simulation in OpenFrameworks_ Technica.md
+CS216-Project 2- Flocking.pdf
