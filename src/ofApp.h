@@ -4,6 +4,7 @@
 #include "ofxGui.h"
 #include "FlockSystem.h"
 #include "ConfigManager.h"
+#include "ofxAssimpModelLoader.h"
 
 class ofApp : public ofBaseApp{
 
@@ -52,6 +53,10 @@ class ofApp : public ofBaseApp{
 		ofxToggle      targetEnabled;
 		ofxFloatSlider targetWeight;
 		
+		// Boid movement parameters
+		ofxFloatSlider fieldOfView;
+		ofxFloatSlider turnRate;
+		
 		// Global system parameters
 		ofxFloatSlider individualismFactor;
 		ofxFloatSlider systemChaos;
@@ -77,6 +82,7 @@ class ofApp : public ofBaseApp{
 		ofxIntSlider spawnCount;
 		ofxButton loadMeshButton;
 		string meshPath;
+		ofxAssimpModelLoader boidModel;
 		ofMesh boidMesh;
 		bool customMeshLoaded;
 		
@@ -99,13 +105,16 @@ class ofApp : public ofBaseApp{
 		void resetSimulation();
 		void spawnBoids();
 		void loadBoidMesh();
+		void loadMeshFromPath(const string& path);
+		void createDefaultMesh();
 		void updateFlockMode();
 		string getFlockModeDescription(int mode);
+		void updateBoidParameters();
         
         // Preset methods
         void loadPreset();
         void savePreset();
         void updateUIFromPreset(const FlockingPreset& preset);
-        FlockingPreset createPresetFromUI();
+        void updatePresetFromUI(FlockingPreset& preset);
         void positionGUIPanels();
 };

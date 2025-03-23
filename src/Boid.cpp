@@ -7,9 +7,14 @@ Boid::Boid() {
     cohesionWeight = 1.0;
     neighborhoodRadius = 3.0;
     separationRadius = 2.0;
-    maxSpeed = 3.0;
-    minSpeed = 0.5;
-    maxForce = 0.5;
+    maxSpeed = 0.15;  // Reduced from 3.0 to 0.15 for this scale
+    minSpeed = 0.1;   // Reduced from 0.5 to 0.1 for this scale
+    maxForce = 0.05;  // Reduced proportionally to the speed reduction
+    
+    // Initialize rotation parameters
+    fieldOfView = 240.0;  // Field of view in degrees (default 240 degrees)
+    turnRate = 2.0;       // Maximum rotation rate per frame
+    previousDirection = ofVec3f(0, 0, 1); // Default forward direction
     
     // Initialize individualistic characteristics
     uniqueness = ofRandom(0.1, 0.9);
@@ -17,7 +22,7 @@ Boid::Boid() {
     energyLevel = ofRandom(0.7, 1.3);
     
     // Generate a personal color with some randomness but still related to uniqueness
-    float hue = ofRandom(160, 260); // Blue to purple range
+    float hue = ofRandom(60, 260); // Blue to purple range
     personalColor.setHsb(hue, 200 + uniqueness * 55, 200 + uniqueness * 55);
     
     // Random initial velocity
@@ -46,6 +51,9 @@ ofVec3f Boid::separate(vector<Boid*> neighbors) {
     // Check each boid in the system
     for (int i = 0; i < neighbors.size(); i++) {
         Boid* other = neighbors[i];
+        
+        // Check if other boid is in field of view
+        if (!isInFieldOfView(other)) continue;
         
         // Calculate distance from current boid to neighbor
         float d = position.distance(other->position);
@@ -89,6 +97,10 @@ ofVec3f Boid::align(vector<Boid*> neighbors) {
     // Sum all velocities and count number of neighbors
     for (int i = 0; i < neighbors.size(); i++) {
         Boid* other = neighbors[i];
+        
+        // Check if other boid is in field of view
+        if (!isInFieldOfView(other)) continue;
+        
         sum += other->velocity;
         count++;
     }
@@ -117,6 +129,10 @@ ofVec3f Boid::cohere(vector<Boid*> neighbors) {
     // Sum all positions and count number of neighbors
     for (int i = 0; i < neighbors.size(); i++) {
         Boid* other = neighbors[i];
+        
+        // Check if other boid is in field of view
+        if (!isInFieldOfView(other)) continue;
+        
         sum += other->position;
         count++;
     }
@@ -132,6 +148,28 @@ ofVec3f Boid::cohere(vector<Boid*> neighbors) {
         // If no neighbors, maintain current direction
         return ofVec3f(0, 0, 0);
     }
+}
+
+bool Boid::isInFieldOfView(Boid* other) {
+    // If the field of view is 360 degrees, everything is visible
+    if (fieldOfView >= 360.0f) return true;
+    
+    // Calculate vector to other boid
+    ofVec3f toOther = other->position - position;
+    
+    // No point in checking if the other boid is at the same position
+    if (toOther.length() <= 0.001f) return true;
+    
+    // Normalize vectors
+    toOther.normalize();
+    ofVec3f forward = velocity;
+    forward.normalize();
+    
+    // Calculate the angle between the forward direction and the direction to the other boid
+    float angle = acos(forward.dot(toOther)) * 180.0f / PI;
+    
+    // Check if angle is within field of view (half angle on each side)
+    return angle <= fieldOfView / 2.0f;
 }
 
 ofVec3f Boid::seek(ofVec3f target) {
@@ -198,6 +236,9 @@ void Boid::applyForce(ofVec3f force) {
 }
 
 void Boid::integrate() {
+    // Save current direction for turn rate limiting
+    previousDirection = velocity.getNormalized();
+    
     // Update velocity with accumulated acceleration
     velocity += acceleration;
     
@@ -216,6 +257,35 @@ void Boid::integrate() {
         velocity *= minSpeed;
     }
     
+    // Apply turn rate limitation
+    if (speed > 0) {
+        ofVec3f newDirection = velocity.getNormalized();
+        
+        // Calculate angle between previous and new direction
+        float angle = acos(previousDirection.dot(newDirection)) * 180.0f / PI;
+        
+        // If turning too fast, limit the rotation
+        if (angle > turnRate) {
+            // Calculate rotation axis
+            ofVec3f rotationAxis = previousDirection.getCrossed(newDirection);
+            
+            if (rotationAxis.length() > 0) {
+                rotationAxis.normalize();
+                
+                // Create quaternion for limited rotation
+                ofQuaternion limitedRotation;
+                limitedRotation.makeRotate(turnRate, rotationAxis);
+                
+                // Apply limited rotation to previous direction
+                ofVec3f limitedDirection = previousDirection;
+                limitedDirection = limitedRotation * limitedDirection;
+                
+                // Set velocity direction to limited direction but preserve speed
+                velocity = limitedDirection * speed;
+            }
+        }
+    }
+    
     // Update position with velocity
     position += velocity;
     
@@ -230,7 +300,7 @@ void Boid::integrate() {
     color = personalColor.getLerped(speedColor, 0.3);
 }
 
-void Boid::draw() {
+void Boid::draw(ofMesh* customMesh) {
     ofPushMatrix();
     ofTranslate(position);
     
@@ -251,11 +321,22 @@ void Boid::draw() {
         glMultMatrixf(mat.getPtr());
     }
     
-    // Draw the boid as a cone
+    // Draw the boid
     ofSetColor(color);
-    float baseSize = 0.2 * size;
-    float height = 0.6 * size;
-    ofDrawCone(0, 0, 0, baseSize, height);
+    
+    // Scale the mesh to match boid size
+    float scaleValue = 0.5 * size;
+    ofScale(scaleValue, scaleValue, scaleValue);
+    
+    if (customMesh != nullptr && customMesh->getNumVertices() > 0) {
+        // Use the provided custom mesh
+        customMesh->draw();
+    } else {
+        // Draw the default cone
+        float baseSize = 0.2 * size;
+        float height = 0.6 * size;
+        ofDrawCone(0, 0, 0, baseSize, height);
+    }
     
     ofPopMatrix();
 }
@@ -271,6 +352,39 @@ void Boid::drawDebug(bool showVelocity, bool showNeighborhood, bool showForces) 
         // Draw separation radius
         ofSetColor(255, 100, 100, 50);
         ofDrawSphere(position, separationRadius);
+        
+        // Draw field of view visualization
+        if (fieldOfView < 360.0f && velocity.length() > 0) {
+            ofVec3f forward = velocity.getNormalized();
+            
+            // Draw a FOV arc (approximate with multiple lines)
+            ofSetColor(200, 200, 0, 100);
+            float radius = 1.0;
+            int segments = 20;
+            float halfFOV = fieldOfView / 2.0f * PI / 180.0f;
+            
+            // Create a rotation to align FOV with velocity direction
+            ofQuaternion forwardRotation;
+            ofVec3f upVector(0, 1, 0);
+            forwardRotation.makeRotate(ofVec3f(0, 0, 1), forward);
+            
+            for (int i = 0; i < segments; i++) {
+                float angle1 = -halfFOV + i * (2 * halfFOV) / (segments - 1);
+                float angle2 = -halfFOV + (i + 1) * (2 * halfFOV) / (segments - 1);
+                
+                // Calculate points on FOV arc
+                ofVec3f point1(sin(angle1) * radius, 0, cos(angle1) * radius);
+                ofVec3f point2(sin(angle2) * radius, 0, cos(angle2) * radius);
+                
+                // Rotate to align with forward direction
+                point1 = forwardRotation * point1;
+                point2 = forwardRotation * point2;
+                
+                // Draw line segment
+                ofDrawLine(position, position + point1);
+                ofDrawLine(position + point1, position + point2);
+            }
+        }
     }
     
     if (showVelocity) {

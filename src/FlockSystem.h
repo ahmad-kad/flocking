@@ -50,11 +50,11 @@ public:
     void setIndividualismFactor(float factor);   // 0-1, how much individual traits affect behavior
     void setSystemChaos(float chaos);           // 0-1, global turbulence level
     void setBoidsVariability(float variability); // 0-1, how different boids are from each other
-    void setColorBasedFlocking(bool enabled, float influence, float threshold); // Color-based flocking settings
+    void setColorBasedFlocking(bool enabled, float threshold, float influence = 0);
     
     // Boundary handling
     void setBounds(ofVec3f min, ofVec3f max);
-    ofVec3f boundaryForce(Boid* boid);
+    ofVec3f boundaryForce(Boid& boid);
     float boundaryForceWeight;
     float boundaryDistance;
     
@@ -105,4 +105,7 @@ private:
     
     // Draw spatial grid for debugging
     void drawGrid();
+    
+    // Draw boundaries wireframe
+    void drawBoundaries();
 }; 

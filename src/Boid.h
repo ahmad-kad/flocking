@@ -17,6 +17,11 @@ public:
     float minSpeed;   
     float maxForce;
     
+    // Rotation control parameters
+    float fieldOfView;        // Field of view angle in degrees (0-360)
+    float turnRate;           // Maximum rotation rate per frame
+    ofVec3f previousDirection; // Keep track of previous frame's direction
+    
     // Individualistic characteristics
     float uniqueness;  // How much this boid deviates from group behavior (0-1)
     ofColor personalColor;  // Individual color 
@@ -36,8 +41,11 @@ public:
     // Apply steering force
     void applyForce(ofVec3f force);
     
+    // Neighbor check based on field of view
+    bool isInFieldOfView(Boid* other);
+    
     // Override draw method
-    void draw();
+    void draw(ofMesh* customMesh = nullptr);
     void drawDebug(bool showVelocity, bool showNeighborhood, bool showForces);
     
     // Override integrate method to include max speed

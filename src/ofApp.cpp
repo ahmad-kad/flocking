@@ -8,41 +8,43 @@
 //  Setup Application data
 //
 void ofApp::setup(){
-	// Camera setup
-	cam.setDistance(20);
-	cam.setNearClip(.1);
-	cam.setFov(65.5);
-	ofSetVerticalSync(true);
-	ofSetFrameRate(60);
-
-	// Setup flocking system basic GUI
-	flockingGui.setup("Basic Flocking");
-	flockingGui.add(boidCount.setup("Boid Count", 50, 10, 500));
+	// Set up the camera
+	cam.setDistance(15);
+	cam.setNearClip(0.01);
+	cam.setFarClip(1000);
+	
+	// Setup flocking parameters GUI
+	flockingGui.setup("Flocking Parameters");
 	flockingGui.add(separationWeight.setup("Separation", 1.5, 0.0, 5.0));
 	flockingGui.add(alignmentWeight.setup("Alignment", 1.0, 0.0, 5.0));
 	flockingGui.add(cohesionWeight.setup("Cohesion", 1.0, 0.0, 5.0));
-	flockingGui.add(neighborhoodRadius.setup("Neighbor Radius", 3.0, 1.0, 10.0));
-	flockingGui.add(separationRadius.setup("Separation Radius", 1.5, 0.5, 5.0));
-	flockingGui.add(maxSpeed.setup("Max Speed", 0.5, 0.15, 5.0));
-	flockingGui.add(minSpeed.setup("Min Speed", 0.1, 0.05, 2.0));
-	flockingGui.add(maxForce.setup("Max Force", 0.0, 0.0, 2.0));
-	flockingGui.add(boundaryWeight.setup("Boundary Force", 1.0, 0.1, 5.0));
+	flockingGui.add(maxSpeed.setup("Max Speed", 0.15, 0.05, 1.0));
+	flockingGui.add(minSpeed.setup("Min Speed", 0.1, 0.05, 0.5));
+	flockingGui.add(maxForce.setup("Max Force", 0.05, 0.01, 0.5));
+	flockingGui.add(neighborhoodRadius.setup("Neighborhood", 3.0, 0.5, 10.0));
+	flockingGui.add(separationRadius.setup("Sep. Radius", 2.0, 0.5, 5.0));
+	flockingGui.add(boundaryWeight.setup("Boundary Force", 1.5, 0.0, 5.0));
+	flockingGui.add(boidCount.setup("Boid Count", 30, 1, 200));
+	flockingGui.add(targetEnabled.setup("Enable Target", false));
+	flockingGui.add(targetWeight.setup("Target Weight", 1.0, 0.0, 5.0));
 	
-	// Setup global parameters GUI
+	// Setup boid movement parameters
+	flockingGui.add(fieldOfView.setup("Field of View", 240, 90, 360));
+	flockingGui.add(turnRate.setup("Turn Rate", 1.5, 0.5, 5.0));
+	
+	// Setup global system parameters GUI
 	globalGui.setup("Global Parameters");
 	globalGui.add(flockMode.setup("Flock Mode", 0, 0, 3));
-	globalGui.add(individualismFactor.setup("Individualism", 0.5, 0.0, 1.0));
-	globalGui.add(systemChaos.setup("System Chaos", 0.0, 0.0, 1.0));
-	globalGui.add(boidsVariability.setup("Boid Variability", 0.5, 0.0, 1.0));
-	globalGui.add(colorBasedFlocking.setup("Color Flocking", false));
-	globalGui.add(colorInfluence.setup("Color Influence", 0.5, 0.0, 1.0));
+	globalGui.add(individualismFactor.setup("Individualism", 0.2, 0.0, 1.0));
+	globalGui.add(systemChaos.setup("System Chaos", 0.05, 0.0, 0.5));
+	globalGui.add(boidsVariability.setup("Boid Variability", 0.2, 0.0, 0.8));
+	globalGui.add(colorBasedFlocking.setup("Color Flocking", true));
+	globalGui.add(colorInfluence.setup("Color Influence", 0.2, 0.0, 1.0));
 	globalGui.add(colorSimilarityThreshold.setup("Color Threshold", 0.3, 0.0, 1.0));
-	globalGui.add(targetEnabled.setup("Target Seeking", false));
-	globalGui.add(targetWeight.setup("Target Weight", 0.5, 0.1, 2.0));
 	
-	// Setup environment GUI
+	// Setup environment parameters GUI
 	environmentGui.setup("Environment");
-	environmentGui.add(backgroundColor.set("Background", ofColor(0, 0, 0), ofColor(0, 0, 0), ofColor(255, 255, 255)));
+	environmentGui.add(backgroundColor.set("Background", ofColor(30, 30, 50)));
 	environmentGui.add(resetButton.setup("Reset Simulation"));
 	environmentGui.add(spawnBoidsButton.setup("Spawn Boids"));
 	environmentGui.add(spawnCount.setup("Spawn Count", 10, 1, 100));
@@ -88,6 +90,7 @@ void ofApp::setup(){
 	bHide = false;
 	simulationPaused = false;
 	customMeshLoaded = false;
+	meshPath = "No mesh loaded";
 	
 	// Initialize flocking system
 	flockSystem.addBoids(boidCount, ofVec3f(0, 0, 0), 5.0);
@@ -100,6 +103,9 @@ void ofApp::setup(){
     
     // Position GUI panels
     positionGUIPanels();
+    
+    // Enable color-based flocking by default
+    flockSystem.setColorBasedFlocking(true, 0.2, 1.0);
 }
 
 //--------------------------------------------------------------
@@ -117,11 +123,13 @@ void ofApp::update() {
     flockSystem.setSeparationRadius(separationRadius);
     flockSystem.boundaryForceWeight = boundaryWeight;
     
+    // Update boid movement parameters
+    updateBoidParameters();
+    
     // Update global parameters
     flockSystem.setIndividualismFactor(individualismFactor);
     flockSystem.setSystemChaos(systemChaos);
     flockSystem.setBoidsVariability(boidsVariability);
-    flockSystem.setColorBasedFlocking(colorBasedFlocking, colorInfluence, colorSimilarityThreshold);
     updateFlockMode();
     
     // Update debug visualization settings
@@ -207,8 +215,12 @@ void ofApp::draw(){
 	ofDrawGridPlane();
 	ofPopMatrix();
 
-	// Draw the flocking system
-	flockSystem.draw(customMeshLoaded ? &boidMesh : nullptr);
+	// Draw the flocking system - use the boid mesh from the model if available
+	if (customMeshLoaded) {
+		flockSystem.draw(&boidMesh);
+	} else {
+		flockSystem.draw(nullptr);
+	}
 	
 	// Draw target if enabled
 	if (targetEnabled) {
@@ -229,8 +241,14 @@ void ofApp::draw(){
 	str += simulationPaused ? "\nSIMULATION PAUSED" : "";
 	str += colorBasedFlocking ? "\nCOLOR FLOCKING ENABLED" : "";
 	
+	if (customMeshLoaded) {
+		str += "\nMesh: " + ofFilePath::getFileName(meshPath);
+	} else {
+		str += "\nMesh: Default cone";
+	}
+	
 	ofSetColor(ofColor::white);
-	ofDrawBitmapString(str, ofGetWindowWidth() - 170, 15);
+	ofDrawBitmapString(str, ofGetWindowWidth() - 250, 15);
     
     // Draw preset selection if not hidden
     if (!bHide && presetNames.size() > 0) {
@@ -304,16 +322,64 @@ void ofApp::loadBoidMesh() {
 	ofFileDialogResult result = ofSystemLoadDialog("Select 3D model file", false, ofFilePath::getCurrentExeDir());
 	if (result.bSuccess) {
 		string path = result.getPath();
-		
-		// Try to load the mesh
-		boidMesh.clear();
-		
-		// Create a simple cone mesh instead of loading from file
-		// (since ofLoadModel is not readily available in this version)
-		boidMesh = ofMesh::cone(0.5, 1.5, 12, 1);
-		meshPath = "Custom cone";
-		customMeshLoaded = true;
+		loadMeshFromPath(path);
 	}
+}
+
+//--------------------------------------------------------------
+void ofApp::loadMeshFromPath(const string& path) {
+    // Reset the mesh state
+    customMeshLoaded = false;
+    
+    // Load mesh file using Assimp
+    if (ofFile::doesFileExist(path)) {
+        ofLogNotice() << "Attempting to load model: " << path;
+        
+        try {
+            // Load the model using Assimp which supports multiple formats (obj, ply, fbx, etc.)
+            // Use load() instead of loadModel() which is deprecated
+            bool loaded = boidModel.load(path, true); // true = optimize mesh
+            
+            if (loaded) {
+                ofLogNotice() << "Successfully loaded model with " << boidModel.getMeshCount() << " meshes";
+                
+                // For compatibility with existing code, extract the first mesh
+                if (boidModel.getMeshCount() > 0) {
+                    // Get the first mesh from the model
+                    boidMesh = boidModel.getMesh(0);
+                    
+                    // Normalize and center the model
+                    boidModel.setScale(100,1,1); // Scale down the model
+                    // boidModel.setScaleNormalization(true); // Normalize size
+                    
+                    meshPath = path;
+                    customMeshLoaded = true;
+                    ofLogNotice() << "Successfully loaded model: " << path;
+                } else {
+                    ofLogError() << "Model loaded but contains no meshes: " << path;
+                    createDefaultMesh();
+                }
+            } else {
+                ofLogError() << "Failed to load model: " << path;
+                createDefaultMesh();
+            }
+        } catch (const std::exception& e) {
+            ofLogError() << "Exception loading model: " << e.what();
+            createDefaultMesh();
+        } catch (...) {
+            ofLogError() << "Unknown error loading model";
+            createDefaultMesh();
+        }
+    } else {
+        ofLogError() << "File does not exist: " << path;
+    }
+}
+
+// Helper method to create a default cone mesh when loading fails
+void ofApp::createDefaultMesh() {
+    boidMesh = ofMesh::cone(0.2, 0.6, 12, 1);
+    meshPath = "Default cone (loading failed)";
+    customMeshLoaded = true;
 }
 
 //--------------------------------------------------------------
@@ -330,7 +396,8 @@ void ofApp::loadPreset() {
 //--------------------------------------------------------------
 void ofApp::savePreset() {
     // Create preset from current UI values
-    FlockingPreset preset = createPresetFromUI();
+    FlockingPreset preset;
+    updatePresetFromUI(preset);
     
     // Use name from parameter
     string name = presetNameParam.get();
@@ -375,9 +442,7 @@ void ofApp::updateUIFromPreset(const FlockingPreset& preset) {
 }
 
 //--------------------------------------------------------------
-FlockingPreset ofApp::createPresetFromUI() {
-    FlockingPreset preset;
-    
+void ofApp::updatePresetFromUI(FlockingPreset& preset) {
     // Copy basic parameters
     preset.separationWeight = separationWeight;
     preset.alignmentWeight = alignmentWeight;
@@ -397,8 +462,6 @@ FlockingPreset ofApp::createPresetFromUI() {
     
     // Copy environment parameters
     preset.backgroundColor = backgroundColor;
-    
-    return preset;
 }
 
 //--------------------------------------------------------------
@@ -420,20 +483,35 @@ void ofApp::positionGUIPanels() {
 
 //--------------------------------------------------------------
 void ofApp::updateFlockMode() {
-    // Update the flock mode in the system
-    switch (flockMode) {
-        case 0:
-            flockSystem.setFlockMode(NORMAL);
-            break;
-        case 1:
-            flockSystem.setFlockMode(SCATTERED);
-            break;
-        case 2:
-            flockSystem.setFlockMode(TIGHT);
-            break;
-        case 3:
-            flockSystem.setFlockMode(PREDATOR_PREY);
-            break;
+    if (flockMode == 0) { // Calm
+        flockSystem.setSeparationRadius(2.0);
+        flockSystem.setNeighborhoodRadius(3.0);
+        flockSystem.setBounds(ofVec3f(-20, -20, -20), ofVec3f(20, 20, 20));
+        flockSystem.boundaryForceWeight = 1.0;
+        flockSystem.boundaryDistance = 5.0;
+        flockSystem.setSystemChaos(0.1);
+        flockSystem.setBoidsVariability(0.3);
+        flockSystem.setColorBasedFlocking(colorBasedFlocking, colorSimilarityThreshold, 1.0); // Fixed parameter order and full color influence
+    }
+    else if (flockMode == 1) { // Excited
+        flockSystem.setSeparationRadius(1.5);
+        flockSystem.setNeighborhoodRadius(5.0);
+        flockSystem.setBounds(ofVec3f(-30, -30, -30), ofVec3f(30, 30, 30));
+        flockSystem.boundaryForceWeight = 1.5;
+        flockSystem.boundaryDistance = 5.0;
+        flockSystem.setSystemChaos(0.3);
+        flockSystem.setBoidsVariability(0.5);
+        flockSystem.setColorBasedFlocking(colorBasedFlocking, colorSimilarityThreshold, 1.0); // Fixed parameter order and full color influence
+    }
+    else if (flockMode == 2) { // Chaotic
+        flockSystem.setSeparationRadius(1.0);
+        flockSystem.setNeighborhoodRadius(8.0);
+        flockSystem.setBounds(ofVec3f(-40, -40, -40), ofVec3f(40, 40, 40));
+        flockSystem.boundaryForceWeight = 0.8;
+        flockSystem.boundaryDistance = 5.0;
+        flockSystem.setSystemChaos(0.6);
+        flockSystem.setBoidsVariability(0.8);
+        flockSystem.setColorBasedFlocking(colorBasedFlocking, colorSimilarityThreshold, 1.0); // Fixed parameter order and full color influence
     }
 }
 
@@ -441,11 +519,11 @@ void ofApp::updateFlockMode() {
 string ofApp::getFlockModeDescription(int mode) {
     switch (mode) {
         case 0:
-            return "Normal";
+            return "Calm";
         case 1:
-            return "Scattered";
+            return "Excited";
         case 2:
-            return "Tight";
+            return "Chaotic";
         case 3:
             return "Predator-Prey";
         default:
@@ -537,7 +615,7 @@ void ofApp::keyPressed(int key){
     case 'l':
         // Load selected preset
         loadPreset();
-        break;
+		break;
 	}
 }
 
@@ -608,9 +686,16 @@ void ofApp::gotMessage(ofMessage msg){
 void ofApp::dragEvent(ofDragInfo dragInfo){ 
 	// If files are dragged onto the window, try to load the first one as a mesh
 	if (!dragInfo.files.empty()) {
-		// Just create a custom cone instead
-		boidMesh = ofMesh::cone(0.5, 1.5, 12, 1);
-		meshPath = dragInfo.files[0];
-		customMeshLoaded = true;
+		string path = dragInfo.files[0];
+		loadMeshFromPath(path);
 	}
+}
+
+// Add new method to update boid parameters
+void ofApp::updateBoidParameters() {
+    // Update field of view and turn rate for all boids
+    for (auto boid : flockSystem.getAllBoids()) {
+        boid->fieldOfView = fieldOfView;
+        boid->turnRate = turnRate;
+    }
 }

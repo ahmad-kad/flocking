@@ -64,20 +64,21 @@ void FlockSystem::update() {
     // Update spatial grid for efficient neighbor search
     updateSpatialGrid();
     
-    // Apply global system chaos if enabled
+    // Apply global system chaos if enabled - with reduced effect for smoother movement
     ofVec3f chaosForce;
     if (systemChaos > 0) {
-        // Create a perlin noise-based turbulence field
-        float time = ofGetElapsedTimef() * 0.2;
+        // Create a perlin noise-based turbulence field with slower time change
+        float time = ofGetElapsedTimef() * 0.1; // Slower time factor for smoother changes
         
         for (int i = 0; i < boids.size(); i++) {
             // Scale chaos based on global setting and boid's energy level
-            float chaos = systemChaos * boids[i]->energyLevel;
+            float chaos = systemChaos * boids[i]->energyLevel * 0.8; // Reduced impact
             
             // Generate unique turbulence for each boid using noise
-            float noiseX = ofSignedNoise(boids[i]->position.x * 0.1, boids[i]->position.y * 0.1, time);
-            float noiseY = ofSignedNoise(boids[i]->position.y * 0.1, boids[i]->position.z * 0.1, time);
-            float noiseZ = ofSignedNoise(boids[i]->position.z * 0.1, boids[i]->position.x * 0.1, time);
+            // Use smaller multipliers for smoother noise
+            float noiseX = ofSignedNoise(boids[i]->position.x * 0.05, boids[i]->position.y * 0.05, time);
+            float noiseY = ofSignedNoise(boids[i]->position.y * 0.05, boids[i]->position.z * 0.05, time);
+            float noiseZ = ofSignedNoise(boids[i]->position.z * 0.05, boids[i]->position.x * 0.05, time);
             
             chaosForce = ofVec3f(noiseX, noiseY, noiseZ) * chaos;
             boids[i]->applyForce(chaosForce);
@@ -183,7 +184,7 @@ void FlockSystem::update() {
     skipNormalFlocking:
         
         // Apply boundary force
-        ofVec3f boundary = boundaryForce(boids[i]);
+        ofVec3f boundary = boundaryForce(*boids[i]);
         boids[i]->boundaryForce = boundary;
         boids[i]->applyForce(boundary * boundaryForceWeight);
         
@@ -209,85 +210,68 @@ void FlockSystem::update() {
 
 void FlockSystem::draw(ofMesh* customMesh) {
     // Draw all boids
-    for (int i = 0; i < boids.size(); i++) {
-        if (customMesh) {
-            // Use custom mesh for rendering
-            ofPushMatrix();
-            
-            // Move to boid position
-            ofTranslate(boids[i]->position);
-            
-            // Calculate rotation to align with movement direction
-            ofVec3f direction = boids[i]->velocity;
-            if (direction.length() > 0) {
-                direction.normalize();
-                
-                // Calculate rotation to align with velocity
-                ofQuaternion rotation;
-                ofVec3f axis(0, 1, 0);
-                rotation.makeRotate(axis, direction);
-                
-                // Apply rotation
-                ofMatrix4x4 mat;
-                rotation.get(mat);
-                glMultMatrixf(mat.getPtr());
-            }
-            
-            // Draw the custom mesh
-            ofSetColor(boids[i]->color);
-            customMesh->draw();
-            
-            ofPopMatrix();
+    for (auto boid : boids) {
+        if (customMesh != nullptr) {
+            boid->draw(customMesh);
         } else {
-            // Use default boid drawing method
-            boids[i]->draw();
+            boid->draw();
         }
         
-        // Draw debug visualizations if enabled
         if (showDebug) {
-            boids[i]->drawDebug(showVelocities, showNeighborhoods, showForces);
+            boid->drawDebug(showVelocities, showNeighborhoods, showForces);
         }
     }
     
-    // Draw spatial grid for debugging
-    if (showDebug && showGrid) {
-        drawGrid();
-    }
-    
-    // Draw target if enabled
-    if (hasTarget) {
-        ofPushStyle();
-        ofSetColor(ofColor::red);
-        ofDrawSphere(target, 0.3);
-        ofPopStyle();
-    }
+    // Always draw the wireframe boundaries
+    drawBoundaries();
 }
 
 void FlockSystem::drawGrid() {
+    if (!showGrid) return;
+    
     ofPushStyle();
-    ofSetColor(ofColor(100, 100, 100, 50));
+    ofSetColor(50, 50, 50, 80);
+    ofSetLineWidth(0.5);
     
-    // Draw grid outline
-    ofNoFill();
-    ofDrawBox(gridMin + (gridMax - gridMin) * 0.5, (gridMax - gridMin).x, (gridMax - gridMin).y, (gridMax - gridMin).z);
-    
-    // Draw grid cells with boids
-    ofSetColor(ofColor(150, 150, 255, 40));
-    for (int x = 0; x < gridResolution; x++) {
-        for (int y = 0; y < gridResolution; y++) {
-            for (int z = 0; z < gridResolution; z++) {
-                if (grid[x][y][z].boids.size() > 0) {
-                    // Calculate cell position
-                    float xPos = ofMap(x, 0, gridResolution, gridMin.x, gridMax.x) + cellSize/2;
-                    float yPos = ofMap(y, 0, gridResolution, gridMin.y, gridMax.y) + cellSize/2;
-                    float zPos = ofMap(z, 0, gridResolution, gridMin.z, gridMax.z) + cellSize/2;
-                    
-                    // Draw cell
-                    ofDrawBox(xPos, yPos, zPos, cellSize, cellSize, cellSize);
+    // Draw grid lines
+    for (int x = 0; x <= gridResolution; x++) {
+        for (int y = 0; y <= gridResolution; y++) {
+            for (int z = 0; z <= gridResolution; z++) {
+                float xPos = ofMap(x, 0, gridResolution, gridMin.x, gridMax.x);
+                float yPos = ofMap(y, 0, gridResolution, gridMin.y, gridMax.y);
+                float zPos = ofMap(z, 0, gridResolution, gridMin.z, gridMax.z);
+                
+                if (x < gridResolution) {
+                    ofDrawLine(xPos, yPos, zPos, 
+                               ofMap(x+1, 0, gridResolution, gridMin.x, gridMax.x), yPos, zPos);
+                }
+                if (y < gridResolution) {
+                    ofDrawLine(xPos, yPos, zPos, 
+                               xPos, ofMap(y+1, 0, gridResolution, gridMin.y, gridMax.y), zPos);
+                }
+                if (z < gridResolution) {
+                    ofDrawLine(xPos, yPos, zPos, 
+                               xPos, yPos, ofMap(z+1, 0, gridResolution, gridMin.z, gridMax.z));
                 }
             }
         }
     }
+    
+    ofPopStyle();
+}
+
+void FlockSystem::drawBoundaries() {
+    ofPushStyle();
+    ofNoFill();
+    ofSetColor(120, 120, 120, 180);
+    ofSetLineWidth(1.5);
+    
+    // Calculate dimensions
+    ofVec3f boundsDimensions = boundsMax - boundsMin;
+    ofVec3f boundsCenter = boundsMin + boundsDimensions * 0.5f;
+    
+    // Draw the wireframe box
+    ofDrawBox(boundsCenter, boundsDimensions.x, boundsDimensions.y, boundsDimensions.z);
     
     ofPopStyle();
 }
@@ -458,31 +442,43 @@ void FlockSystem::setBounds(ofVec3f min, ofVec3f max) {
     boundsMax = max;
 }
 
-ofVec3f FlockSystem::boundaryForce(Boid* boid) {
-    ofVec3f force(0, 0, 0);
+ofVec3f FlockSystem::boundaryForce(Boid& boid) {
+    ofVec3f force = ofVec3f(0, 0, 0);
+    float repulsionStrength = 3.0; // Stronger repulsion for aquarium-like effect
+    float margin = 2.0;
     
-    // X-axis boundary
-    if (boid->position.x < boundsMin.x + boundaryDistance) {
-        force.x = boundaryDistance - (boid->position.x - boundsMin.x);
-    } 
-    else if (boid->position.x > boundsMax.x - boundaryDistance) {
-        force.x = (boundsMax.x - boundaryDistance) - boid->position.x;
+    // Calculate distance from each boundary
+    float distToBottom = boid.position.y - boundsMin.y;
+    float distToTop = boundsMax.y - boid.position.y;
+    float distToLeft = boid.position.x - boundsMin.x;
+    float distToRight = boundsMax.x - boid.position.x;
+    float distToFront = boid.position.z - boundsMin.z;
+    float distToBack = boundsMax.z - boid.position.z;
+    
+    // Apply stronger exponential force as boids approach boundaries
+    if (distToBottom < margin) {
+        float strength = repulsionStrength * exp(1.0 - distToBottom/margin);
+        force.y += strength;
     }
-    
-    // Y-axis boundary
-    if (boid->position.y < boundsMin.y + boundaryDistance) {
-        force.y = boundaryDistance - (boid->position.y - boundsMin.y);
-    } 
-    else if (boid->position.y > boundsMax.y - boundaryDistance) {
-        force.y = (boundsMax.y - boundaryDistance) - boid->position.y;
+    if (distToTop < margin) {
+        float strength = repulsionStrength * exp(1.0 - distToTop/margin);
+        force.y -= strength;
     }
-    
-    // Z-axis boundary
-    if (boid->position.z < boundsMin.z + boundaryDistance) {
-        force.z = boundaryDistance - (boid->position.z - boundsMin.z);
-    } 
-    else if (boid->position.z > boundsMax.z - boundaryDistance) {
-        force.z = (boundsMax.z - boundaryDistance) - boid->position.z;
+    if (distToLeft < margin) {
+        float strength = repulsionStrength * exp(1.0 - distToLeft/margin);
+        force.x += strength;
+    }
+    if (distToRight < margin) {
+        float strength = repulsionStrength * exp(1.0 - distToRight/margin);
+        force.x -= strength;
+    }
+    if (distToFront < margin) {
+        float strength = repulsionStrength * exp(1.0 - distToFront/margin);
+        force.z += strength;
+    }
+    if (distToBack < margin) {
+        float strength = repulsionStrength * exp(1.0 - distToBack/margin);
+        force.z -= strength;
     }
     
     return force;
@@ -536,27 +532,34 @@ void FlockSystem::clear() {
     boids.clear();
 }
 
-void FlockSystem::setColorBasedFlocking(bool enabled, float influence, float threshold) {
+void FlockSystem::setColorBasedFlocking(bool enabled, float threshold, float influence) {
     colorBasedFlockingEnabled = enabled;
-    colorInfluenceFactor = ofClamp(influence, 0, 1.0);
-    colorSimilarityThreshold = ofClamp(threshold, 0, 1.0);
+    colorSimilarityThreshold = threshold;
+    colorInfluenceFactor = influence;
+    
+    // Set to 1.0 by default to make boids only follow similar colors
+    if (enabled && influence == 0) {
+        colorInfluenceFactor = 1.0;
+    }
 }
 
 float FlockSystem::getColorSimilarity(Boid* boid1, Boid* boid2) {
-    // Calculate color similarity based on RGB distance
-    ofColor color1 = boid1->personalColor;
-    ofColor color2 = boid2->personalColor;
+    // Calculate color similarity (0 to 1)
+    float h1, s1, b1, h2, s2, b2;
+    boid1->color.getHsb(h1, s1, b1);
+    boid2->color.getHsb(h2, s2, b2);
     
-    // Calculate distance in RGB space
-    float rDiff = (color1.r - color2.r) / 255.0;
-    float gDiff = (color1.g - color2.g) / 255.0;
-    float bDiff = (color1.b - color2.b) / 255.0;
+    // Calculate hue distance (wrapping around 360 degrees)
+    float hueDist = fabs(h1 - h2);
+    if (hueDist > 180) hueDist = 360 - hueDist;
+    hueDist /= 180.0; // normalize to 0-1
     
-    // Euclidean distance in RGB space, normalized to 0-1
-    float distance = sqrt(rDiff*rDiff + gDiff*gDiff + bDiff*bDiff) / sqrt(3.0);
+    // Calculate saturation and brightness distances
+    float satDist = fabs(s1 - s2) / 255.0;
+    float briDist = fabs(b1 - b2) / 255.0;
     
-    // Convert distance to similarity (1.0 = identical, 0.0 = completely different)
-    float similarity = 1.0 - distance;
+    // Weighted sum (hue is more important for color similarity)
+    float similarity = 1.0 - (hueDist * 0.6 + satDist * 0.2 + briDist * 0.2);
     
     return similarity;
 } 
