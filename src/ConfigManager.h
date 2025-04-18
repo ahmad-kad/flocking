@@ -3,11 +3,11 @@
 #include "ofMain.h"
 #include "ofxGui.h"
 
-// Structure to hold a complete set of simulation parameters
+// Structure for simulation parameters
 struct FlockingPreset {
     string name;
     
-    // Basic flocking parameters
+    // Flocking parameters
     float separationWeight;
     float alignmentWeight;
     float cohesionWeight;
@@ -18,7 +18,7 @@ struct FlockingPreset {
     float separationRadius;
     float boundaryWeight;
     
-    // Global system parameters
+    // System parameters
     float individualismFactor;
     float systemChaos;
     float boidsVariability;
@@ -32,15 +32,15 @@ class ConfigManager {
 public:
     ConfigManager();
     
-    // Load and save presets
+    // Save and load presets
     void savePreset(const string& name, const FlockingPreset& preset);
     bool loadPreset(const string& name, FlockingPreset& preset);
     bool loadPresetByIndex(int index, FlockingPreset& preset);
     
-    // Get preset names for GUI
+    // Get preset names
     vector<string> getPresetNames();
     
-    // Save/load all presets to/from disk
+    // Save/load presets to/from disk
     void savePresetsToFile(const string& filename = "presets.json");
     void loadPresetsFromFile(const string& filename = "presets.json");
     
@@ -48,6 +48,6 @@ public:
     void createDefaultPresets();
     
 private:
-    // List of saved presets
+    // Saved presets
     vector<FlockingPreset> presets;
 }; 

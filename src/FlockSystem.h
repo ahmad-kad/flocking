@@ -3,17 +3,17 @@
 #include "ofMain.h"
 #include "Boid.h"
 
-// Simple spatial grid cell
+// Spatial grid cell
 struct Cell {
     vector<Boid*> boids;
 };
 
-// Flocking system modes
+// Flocking modes
 enum FlockMode {
-    NORMAL,          // Standard flocking
-    SCATTERED,       // More individualistic behavior
-    TIGHT,           // Tightly grouped
-    PREDATOR_PREY    // Some boids chase others
+    NORMAL,          // Flocking
+    SCATTERED,       // Individualistic
+    TIGHT,           // Grouped
+    PREDATOR_PREY    // Chasing
 };
 
 class FlockSystem {
@@ -21,7 +21,7 @@ public:
     FlockSystem();
     ~FlockSystem();
     
-    // Flock behaviors
+    // Update and draw
     void update();
     void draw(ofMesh* customMesh = nullptr);
     
@@ -33,11 +33,11 @@ public:
     vector<Boid*> getAllBoids() { return boids; }
     int getCount() { return boids.size(); }
     
-    // Spatial partitioning
+    // Neighbors and grid
     vector<Boid*> getNeighbors(Boid* boid, float radius);
     void updateSpatialGrid();
     
-    // Configuration
+    // Set parameters
     void setParameters(float sepWeight, float aliWeight, float cohWeight);
     void setMaxSpeed(float speed);
     void setMinSpeed(float speed);
@@ -45,26 +45,29 @@ public:
     void setNeighborhoodRadius(float radius);
     void setSeparationRadius(float radius);
     
-    // Global behavior parameters
+    // Global parameters
     void setFlockMode(FlockMode mode);
-    void setIndividualismFactor(float factor);   // 0-1, how much individual traits affect behavior
-    void setSystemChaos(float chaos);           // 0-1, global turbulence level
-    void setBoidsVariability(float variability); // 0-1, how different boids are from each other
+    void setIndividualismFactor(float factor);   // 0-1, individual traits
+    void setSystemChaos(float chaos);           // 0-1, turbulence
+    void setBoidsVariability(float variability); // 0-1, differences
     void setColorBasedFlocking(bool enabled, float threshold, float influence = 0);
     
-    // Boundary handling
+    // Boundary settings
     void setBounds(ofVec3f min, ofVec3f max);
     ofVec3f boundaryForce(Boid& boid);
     float boundaryForceWeight;
     float boundaryDistance;
+    void applySmoothedFlockingBehavior(Boid* boid, vector<Boid*>& neighbors);
+    void adjustForcesForFlockMode(Boid* boid);
     
-    // Optional target seeking
+    
+    // Target seeking
     void setTarget(ofVec3f target);
     bool hasTarget;
     ofVec3f target;
     float targetWeight;
     
-    // Debug visualization
+    // Debug options
     bool showDebug;
     bool showVelocities;
     bool showNeighborhoods;
@@ -74,38 +77,38 @@ public:
 private:
     vector<Boid*> boids;
     
-    // Global parameters
+    // Global settings
     FlockMode flockMode;
     float individualismFactor;
     float systemChaos;
     float boidsVariability;
     
-    // Color-based flocking
+    // Color-based settings
     bool colorBasedFlockingEnabled;
     float colorInfluenceFactor;
     float colorSimilarityThreshold;
     float getColorSimilarity(Boid* boid1, Boid* boid2);
     
-    // Spatial partitioning grid
+    // Spatial grid
     vector<vector<vector<Cell>>> grid;
     ofVec3f gridMin;
     ofVec3f gridMax;
     int gridResolution;
     float cellSize;
     
-    // Boundary constraints
+    // Boundary limits
     ofVec3f boundsMin;
     ofVec3f boundsMax;
     
-    // Convert world position to grid cell coordinates
+    // Convert position to grid coordinates
     ofVec3f worldToGrid(ofVec3f position);
     
-    // Get grid cell at coordinates
+    // Get cell at coordinates
     Cell* getCell(int x, int y, int z);
     
-    // Draw spatial grid for debugging
+    // Draw grid
     void drawGrid();
     
-    // Draw boundaries wireframe
+    // Draw boundaries
     void drawBoundaries();
 }; 

@@ -1,18 +1,18 @@
 #include "FlockSystem.h"
 
 FlockSystem::FlockSystem() {
-    // Initialize spatial grid
+    // Set up spatial grid
     gridResolution = 10;
     gridMin = ofVec3f(-20, -20, -20);
     gridMax = ofVec3f(20, 20, 20);
     
-    // Calculate cell size based on grid dimensions
+    // Calculate cell size
     float xSize = (gridMax.x - gridMin.x) / gridResolution;
     float ySize = (gridMax.y - gridMin.y) / gridResolution;
     float zSize = (gridMax.z - gridMin.z) / gridResolution;
     cellSize = min(min(xSize, ySize), zSize);
     
-    // Initialize 3D grid
+    // Create 3D grid
     grid.resize(gridResolution);
     for (int x = 0; x < gridResolution; x++) {
         grid[x].resize(gridResolution);
@@ -21,30 +21,30 @@ FlockSystem::FlockSystem() {
         }
     }
     
-    // Set default bounds
+    // Set bounds
     boundsMin = gridMin;
     boundsMax = gridMax;
     
-    // Initialize boundary parameters
+    // Set boundary parameters
     boundaryForceWeight = 1.0;
-    boundaryDistance = 2.0;
+    boundaryDistance = 5.0;
     
-    // Initialize target seeking
+    // Set target seeking
     hasTarget = false;
     targetWeight = 0.5;
     
-    // Initialize global parameters
+    // Set global parameters
     flockMode = NORMAL;
     individualismFactor = 0.5;
     systemChaos = 0.0;
     boidsVariability = 0.5;
     
-    // Initialize color-based flocking
+    // Set color-based flocking
     colorBasedFlockingEnabled = false;
     colorInfluenceFactor = 0.5;
     colorSimilarityThreshold = 0.3;
     
-    // Initialize debug visualization
+    // Set debug visualization
     showDebug = false;
     showVelocities = false;
     showNeighborhoods = false;
@@ -53,163 +53,17 @@ FlockSystem::FlockSystem() {
 }
 
 FlockSystem::~FlockSystem() {
-    // Delete all boids
+    // Remove all boids
     for (int i = 0; i < boids.size(); i++) {
         delete boids[i];
     }
     boids.clear();
 }
 
-void FlockSystem::update() {
-    // Update spatial grid for efficient neighbor search
-    updateSpatialGrid();
-    
-    // Apply global system chaos if enabled - with reduced effect for smoother movement
-    ofVec3f chaosForce;
-    if (systemChaos > 0) {
-        // Create a perlin noise-based turbulence field with slower time change
-        float time = ofGetElapsedTimef() * 0.1; // Slower time factor for smoother changes
-        
-        for (int i = 0; i < boids.size(); i++) {
-            // Scale chaos based on global setting and boid's energy level
-            float chaos = systemChaos * boids[i]->energyLevel * 0.8; // Reduced impact
-            
-            // Generate unique turbulence for each boid using noise
-            // Use smaller multipliers for smoother noise
-            float noiseX = ofSignedNoise(boids[i]->position.x * 0.05, boids[i]->position.y * 0.05, time);
-            float noiseY = ofSignedNoise(boids[i]->position.y * 0.05, boids[i]->position.z * 0.05, time);
-            float noiseZ = ofSignedNoise(boids[i]->position.z * 0.05, boids[i]->position.x * 0.05, time);
-            
-            chaosForce = ofVec3f(noiseX, noiseY, noiseZ) * chaos;
-            boids[i]->applyForce(chaosForce);
-        }
-    }
-    
-    // Apply flocking behavior based on the current mode
-    for (int i = 0; i < boids.size(); i++) {
-        // Get neighbors for this boid
-        vector<Boid*> neighbors = getNeighbors(boids[i], boids[i]->neighborhoodRadius);
-        
-        // If color-based flocking is enabled, filter neighbors by color similarity
-        if (colorBasedFlockingEnabled && !neighbors.empty()) {
-            vector<Boid*> colorFiltered;
-            vector<float> colorWeights;
-            
-            // Calculate color similarity for each neighbor
-            for (auto neighbor : neighbors) {
-                float similarity = getColorSimilarity(boids[i], neighbor);
-                
-                // Use similarity as a weight factor - only include neighbors above threshold
-                if (similarity > colorSimilarityThreshold) {
-                    colorFiltered.push_back(neighbor);
-                    colorWeights.push_back(similarity);
-                }
-            }
-            
-            // If we have color-similar neighbors, use those primarily
-            if (!colorFiltered.empty()) {
-                // Blend normal behavior with color-based behavior
-                // This allows boids to still flock normally but prioritize similar colors
-                
-                // First, get normal flocking forces
-                ofVec3f sepForce = boids[i]->separate(neighbors);
-                ofVec3f aliForce = boids[i]->align(neighbors);
-                ofVec3f cohForce = boids[i]->cohere(neighbors);
-                
-                // Then, get color-based flocking forces
-                ofVec3f colorSepForce, colorAliForce, colorCohForce;
-                if (colorFiltered.size() > 0) {
-                    colorSepForce = boids[i]->separate(colorFiltered);
-                    colorAliForce = boids[i]->align(colorFiltered);
-                    colorCohForce = boids[i]->cohere(colorFiltered);
-                }
-                
-                // Blend forces based on color influence factor
-                float normalWeight = 1.0 - colorInfluenceFactor;
-                float colorWeight = colorInfluenceFactor;
-                
-                boids[i]->separationForce = sepForce * normalWeight + colorSepForce * colorWeight;
-                boids[i]->alignmentForce = aliForce * normalWeight + colorAliForce * colorWeight;
-                boids[i]->cohesionForce = cohForce * normalWeight + colorCohForce * colorWeight;
-                
-                // Apply blended forces directly
-                boids[i]->applyForce(boids[i]->separationForce * boids[i]->separationWeight);
-                boids[i]->applyForce(boids[i]->alignmentForce * boids[i]->alignmentWeight);
-                boids[i]->applyForce(boids[i]->cohesionForce * boids[i]->cohesionWeight);
-                
-                // Skip the normal flocking call since we've manually applied the forces
-                goto skipNormalFlocking;
-            }
-        }
-        
-        // Set boid's individuality based on global setting and individual uniqueness
-        boids[i]->uniqueness = ofClamp(boids[i]->uniqueness * individualismFactor, 0.1, 0.9);
-        
-        // Adjust flocking weights based on flock mode
-        switch (flockMode) {
-            case NORMAL:
-                // Standard weights (already set)
-                break;
-                
-            case SCATTERED:
-                // Higher separation, lower cohesion
-                boids[i]->separationWeight *= 2.0;
-                boids[i]->cohesionWeight *= 0.5;
-                break;
-                
-            case TIGHT:
-                // Lower separation, higher cohesion
-                boids[i]->separationWeight *= 0.5;
-                boids[i]->cohesionWeight *= 2.0;
-                break;
-                
-            case PREDATOR_PREY:
-                // Some boids chase others
-                if (boids[i]->energyLevel > 0.7) {
-                    // Predators chase
-                    boids[i]->separationWeight *= 0.3;
-                    boids[i]->maxSpeed *= 1.2;
-                }
-                else {
-                    // Prey flee
-                    boids[i]->separationWeight *= 2.0;
-                    boids[i]->alignmentWeight *= 1.5;
-                }
-                break;
-        }
-        
-        // Apply normal flocking behavior
-        boids[i]->flock(neighbors);
-        
-    skipNormalFlocking:
-        
-        // Apply boundary force
-        ofVec3f boundary = boundaryForce(*boids[i]);
-        boids[i]->boundaryForce = boundary;
-        boids[i]->applyForce(boundary * boundaryForceWeight);
-        
-        // Apply target seeking if enabled
-        if (hasTarget) {
-            ofVec3f targetForce = boids[i]->seek(target);
-            boids[i]->seekForce = targetForce;
-            boids[i]->applyForce(targetForce * targetWeight);
-        }
-        
-        // Apply random wandering based on boid's uniqueness
-        ofVec3f wanderForce = boids[i]->wander() * boids[i]->uniqueness;
-        boids[i]->wanderForce = wanderForce;
-        boids[i]->applyForce(wanderForce);
-        
-        // Update particle physics
-        boids[i]->integrate();
-        
-        // Reset forces for the next frame
-        boids[i]->forces = ofVec3f(0, 0, 0);
-    }
-}
+
 
 void FlockSystem::draw(ofMesh* customMesh) {
-    // Draw all boids
+    // Render all boids
     for (auto boid : boids) {
         if (customMesh != nullptr) {
             boid->draw(customMesh);
@@ -222,9 +76,166 @@ void FlockSystem::draw(ofMesh* customMesh) {
         }
     }
     
-    // Always draw the wireframe boundaries
+    // Draw boundaries
     drawBoundaries();
 }
+
+void FlockSystem::update() {
+    // Refresh spatial grid
+    updateSpatialGrid();
+    
+    // Apply system chaos if active
+    if (systemChaos > 0) {
+        float time = ofGetElapsedTimef() * 0.1;
+        
+        for (int i = 0; i < boids.size(); i++) {
+            // Scale chaos based on settings but reduce intensity for smoother motion
+            float chaos = systemChaos * boids[i]->energyLevel * 0.3;
+            
+            // Generate turbulence for each boid with slower variation
+            float noiseX = ofSignedNoise(boids[i]->position.x * 0.03, boids[i]->position.y * 0.03, time);
+            float noiseY = ofSignedNoise(boids[i]->position.y * 0.03, boids[i]->position.z * 0.03, time);
+            float noiseZ = ofSignedNoise(boids[i]->position.z * 0.03, boids[i]->position.x * 0.03, time);
+            
+            ofVec3f chaosForce = ofVec3f(noiseX, noiseY, noiseZ) * chaos;
+            boids[i]->applyForce(chaosForce);
+        }
+    }
+    
+    // Apply flocking behavior
+    for (int i = 0; i < boids.size(); i++) {
+        // Get neighbors
+        vector<Boid*> neighbors = getNeighbors(boids[i], boids[i]->neighborhoodRadius);
+        
+        // Set individuality
+        boids[i]->uniqueness = ofClamp(boids[i]->uniqueness * individualismFactor, 0.1, 0.9);
+        
+        // Apply flocking behavior based on color if enabled
+        if (colorBasedFlockingEnabled && !neighbors.empty()) {
+            vector<Boid*> colorFiltered;
+            
+            // Filter neighbors by color similarity
+            for (auto neighbor : neighbors) {
+                float similarity = getColorSimilarity(boids[i], neighbor);
+                if (similarity > colorSimilarityThreshold) {
+                    colorFiltered.push_back(neighbor);
+                }
+            }
+            
+            // Use color-similar neighbors if available
+            if (!colorFiltered.empty()) {
+                // Calculate forces with regular neighbors and color-filtered neighbors
+                ofVec3f sepForce = boids[i]->separate(neighbors);
+                ofVec3f aliForce = boids[i]->align(neighbors);
+                ofVec3f cohForce = boids[i]->cohere(neighbors);
+                
+                ofVec3f colorSepForce = boids[i]->separate(colorFiltered);
+                ofVec3f colorAliForce = boids[i]->align(colorFiltered);
+                ofVec3f colorCohForce = boids[i]->cohere(colorFiltered);
+                
+                // Blend forces with smooth transition
+                float normalWeight = 1.0 - colorInfluenceFactor;
+                float colorWeight = colorInfluenceFactor;
+                
+                // Smooth the forces with interpolation for reduced jitter
+                float smoothFactor = 0.3; // Lower = smoother
+                boids[i]->separationForce = boids[i]->separationForce.getInterpolated(
+                    sepForce * normalWeight + colorSepForce * colorWeight, smoothFactor);
+                boids[i]->alignmentForce = boids[i]->alignmentForce.getInterpolated(
+                    aliForce * normalWeight + colorAliForce * colorWeight, smoothFactor);
+                boids[i]->cohesionForce = boids[i]->cohesionForce.getInterpolated(
+                    cohForce * normalWeight + colorCohForce * colorWeight, smoothFactor);
+                
+                // Apply blended forces
+                boids[i]->applyForce(boids[i]->separationForce * boids[i]->separationWeight);
+                boids[i]->applyForce(boids[i]->alignmentForce * boids[i]->alignmentWeight);
+                boids[i]->applyForce(boids[i]->cohesionForce * boids[i]->cohesionWeight);
+            } else {
+                // Apply normal flocking with smoothing
+                applySmoothedFlockingBehavior(boids[i], neighbors);
+            }
+        } else {
+            // Apply normal flocking with smoothing
+            applySmoothedFlockingBehavior(boids[i], neighbors);
+        }
+        
+        // Apply target seeking if enabled
+        if (hasTarget) {
+            ofVec3f targetForce = boids[i]->seek(target);
+            boids[i]->seekForce = targetForce;
+            boids[i]->applyForce(targetForce * targetWeight);
+        }
+        
+        // Apply wandering with reduced jitter
+        ofVec3f newWanderForce = boids[i]->wander() * boids[i]->uniqueness * 0.7;
+        boids[i]->wanderForce = boids[i]->wanderForce.getInterpolated(newWanderForce, 0.2);
+        boids[i]->applyForce(boids[i]->wanderForce);
+        
+        // Update physics
+        boids[i]->integrate();
+    }
+}
+
+// Add this helper method to your FlockSystem class
+void FlockSystem::adjustForcesForFlockMode(Boid* boid) {
+    float separationMult = 1.0;
+    float alignmentMult = 1.0;
+    float cohesionMult = 1.0;
+    
+    switch (flockMode) {
+        case SCATTERED:
+            separationMult = 2.0;
+            cohesionMult = 0.5;
+            break;
+            
+        case TIGHT:
+            separationMult = 0.5;
+            cohesionMult = 2.0;
+            break;
+            
+        case PREDATOR_PREY:
+            if (boid->energyLevel > 0.7) {
+                separationMult = 0.3;
+                boid->maxSpeed *= 1.2;
+            } else {
+                separationMult = 2.0;
+                alignmentMult = 1.5;
+            }
+            break;
+            
+        default: // NORMAL
+            break;
+    }
+    
+    // Apply multipliers
+    boid->separationForce *= separationMult;
+    boid->alignmentForce *= alignmentMult;
+    boid->cohesionForce *= cohesionMult;
+}
+
+// Add this helper method to your FlockSystem class
+void FlockSystem::applySmoothedFlockingBehavior(Boid* boid, vector<Boid*>& neighbors) {
+    // Calculate new forces
+    ofVec3f newSeparationForce = boid->separate(neighbors);
+    ofVec3f newAlignmentForce = boid->align(neighbors);
+    ofVec3f newCohesionForce = boid->cohere(neighbors);
+    
+    // Smooth forces with interpolation
+    float smoothFactor = 0.2; // Lower = smoother transitions
+    boid->separationForce = boid->separationForce.getInterpolated(newSeparationForce, smoothFactor);
+    boid->alignmentForce = boid->alignmentForce.getInterpolated(newAlignmentForce, smoothFactor);
+    boid->cohesionForce = boid->cohesionForce.getInterpolated(newCohesionForce, smoothFactor);
+    
+    // Adjust forces based on flocking mode
+    adjustForcesForFlockMode(boid);
+    
+    // Apply forces
+    boid->applyForce(boid->separationForce * boid->separationWeight);
+    boid->applyForce(boid->alignmentForce * boid->alignmentWeight);
+    boid->applyForce(boid->cohesionForce * boid->cohesionWeight);
+}
+
+
 
 void FlockSystem::drawGrid() {
     if (!showGrid) return;
@@ -270,7 +281,7 @@ void FlockSystem::drawBoundaries() {
     ofVec3f boundsDimensions = boundsMax - boundsMin;
     ofVec3f boundsCenter = boundsMin + boundsDimensions * 0.5f;
     
-    // Draw the wireframe box
+    // Draw wireframe box
     ofDrawBox(boundsCenter, boundsDimensions.x, boundsDimensions.y, boundsDimensions.z);
     
     ofPopStyle();
@@ -279,7 +290,7 @@ void FlockSystem::drawBoundaries() {
 void FlockSystem::addBoid(Boid* boid) {
     boids.push_back(boid);
     
-    // Apply variability to new boid
+    // Set variability for new boid
     boid->uniqueness = ofRandom(0.1, 0.9) * boidsVariability;
     boid->size = ofRandom(0.8, 1.2);
     boid->energyLevel = ofRandom(0.7, 1.3);
@@ -289,7 +300,7 @@ void FlockSystem::addBoids(int count, ofVec3f position, float spreadRadius) {
     for (int i = 0; i < count; i++) {
         Boid* boid = new Boid();
         
-        // Set random position within spread radius
+        // Set random position
         ofVec3f randomOffset = ofVec3f(
             ofRandom(-spreadRadius, spreadRadius),
             ofRandom(-spreadRadius, spreadRadius),
@@ -297,14 +308,14 @@ void FlockSystem::addBoids(int count, ofVec3f position, float spreadRadius) {
         );
         boid->position = position + randomOffset;
         
-        // Set random initial velocity
+        // Set random velocity
         boid->velocity = ofVec3f(
-            ofRandom(-1, 1),
-            ofRandom(-1, 1),
-            ofRandom(-1, 1)
+            ofRandom(-0.1, 0.1),
+            ofRandom(-0.1, 0.1),
+            ofRandom(-0.1, 0.1)
         );
         boid->velocity.normalize();
-        boid->velocity *= ofRandom(boid->minSpeed, boid->maxSpeed);
+        boid->velocity *= ofRandom(boid->minSpeed * 0.5, boid->maxSpeed * 0.5);
         
         // Add to flock
         addBoid(boid);
@@ -314,13 +325,13 @@ void FlockSystem::addBoids(int count, ofVec3f position, float spreadRadius) {
 vector<Boid*> FlockSystem::getNeighbors(Boid* boid, float radius) {
     vector<Boid*> neighbors;
     
-    // Convert boid position to grid coordinates
+    // Convert position to grid coordinates
     ofVec3f gridPos = worldToGrid(boid->position);
     int gx = gridPos.x;
     int gy = gridPos.y;
     int gz = gridPos.z;
     
-    // Calculate cell search radius based on neighbor radius
+    // Calculate search radius
     int cellRadius = ceil(radius / cellSize);
     
     // Search neighboring cells
@@ -329,13 +340,13 @@ vector<Boid*> FlockSystem::getNeighbors(Boid* boid, float radius) {
             for (int z = max(0, gz - cellRadius); z <= min(gridResolution - 1, gz + cellRadius); z++) {
                 Cell* cell = getCell(x, y, z);
                 if (cell) {
-                    // Check all boids in this cell
+                    // Check boids in this cell
                     for (int i = 0; i < cell->boids.size(); i++) {
                         Boid* other = cell->boids[i];
                         
-                        // Don't add self to neighbors
+                        // Exclude self
                         if (other != boid) {
-                            // Check actual distance
+                            // Check distance
                             float distance = boid->position.distance(other->position);
                             if (distance < radius) {
                                 neighbors.push_back(other);
@@ -351,7 +362,7 @@ vector<Boid*> FlockSystem::getNeighbors(Boid* boid, float radius) {
 }
 
 void FlockSystem::updateSpatialGrid() {
-    // Clear all cells
+    // Clear cells
     for (int x = 0; x < gridResolution; x++) {
         for (int y = 0; y < gridResolution; y++) {
             for (int z = 0; z < gridResolution; z++) {
@@ -367,7 +378,7 @@ void FlockSystem::updateSpatialGrid() {
         int gy = gridPos.y;
         int gz = gridPos.z;
         
-        // Make sure coordinates are within grid bounds
+        // Ensure coordinates are valid
         if (gx >= 0 && gx < gridResolution &&
             gy >= 0 && gy < gridResolution &&
             gz >= 0 && gz < gridResolution) {
@@ -429,9 +440,8 @@ void FlockSystem::setSystemChaos(float chaos) {
 void FlockSystem::setBoidsVariability(float variability) {
     boidsVariability = ofClamp(variability, 0, 1);
     
-    // Apply to existing boids
+    // Adjust existing boids
     for (int i = 0; i < boids.size(); i++) {
-        // Adjust uniqueness but keep some of the original characteristics
         float original = boids[i]->uniqueness;
         boids[i]->uniqueness = original * 0.5 + ofRandom(0.1, 0.9) * variability * 0.5;
     }
@@ -444,10 +454,15 @@ void FlockSystem::setBounds(ofVec3f min, ofVec3f max) {
 
 ofVec3f FlockSystem::boundaryForce(Boid& boid) {
     ofVec3f force = ofVec3f(0, 0, 0);
-    float repulsionStrength = 3.0; // Stronger repulsion for aquarium-like effect
-    float margin = 2.0;
+    float repulsionStrength = 2.0;
+    float margin = 4.0;  // Increased margin for earlier response
     
-    // Calculate distance from each boundary
+    // Calculate force direction - toward center
+    ofVec3f toCenter = (boundsMin + boundsMax) * 0.5 - boid.position;
+    float distanceFromCenter = toCenter.length();
+    float maxRadius = (boundsMax - boundsMin).length() * 0.5;
+    
+    // Calculate distance to boundaries in each direction
     float distToBottom = boid.position.y - boundsMin.y;
     float distToTop = boundsMax.y - boid.position.y;
     float distToLeft = boid.position.x - boundsMin.x;
@@ -455,30 +470,44 @@ ofVec3f FlockSystem::boundaryForce(Boid& boid) {
     float distToFront = boid.position.z - boundsMin.z;
     float distToBack = boundsMax.z - boid.position.z;
     
-    // Apply stronger exponential force as boids approach boundaries
-    if (distToBottom < margin) {
-        float strength = repulsionStrength * exp(1.0 - distToBottom/margin);
-        force.y += strength;
-    }
-    if (distToTop < margin) {
-        float strength = repulsionStrength * exp(1.0 - distToTop/margin);
-        force.y -= strength;
-    }
-    if (distToLeft < margin) {
-        float strength = repulsionStrength * exp(1.0 - distToLeft/margin);
-        force.x += strength;
-    }
-    if (distToRight < margin) {
-        float strength = repulsionStrength * exp(1.0 - distToRight/margin);
-        force.x -= strength;
-    }
-    if (distToFront < margin) {
-        float strength = repulsionStrength * exp(1.0 - distToFront/margin);
-        force.z += strength;
-    }
-    if (distToBack < margin) {
-        float strength = repulsionStrength * exp(1.0 - distToBack/margin);
-        force.z -= strength;
+    // Find the closest boundary
+    float minDist = min(min(min(distToBottom, distToTop),
+                        min(distToLeft, distToRight)),
+                        min(distToFront, distToBack));
+    
+    // Apply repulsion force that increases as boid gets closer to boundary
+    if (minDist < margin) {
+        // Calculate force components based on each boundary
+        if (distToBottom < margin) {
+            float strength = repulsionStrength * (1.0 - distToBottom/margin);
+            force.y += strength;
+        }
+        if (distToTop < margin) {
+            float strength = repulsionStrength * (1.0 - distToTop/margin);
+            force.y -= strength;
+        }
+        if (distToLeft < margin) {
+            float strength = repulsionStrength * (1.0 - distToLeft/margin);
+            force.x += strength;
+        }
+        if (distToRight < margin) {
+            float strength = repulsionStrength * (1.0 - distToRight/margin);
+            force.x -= strength;
+        }
+        if (distToFront < margin) {
+            float strength = repulsionStrength * (1.0 - distToFront/margin);
+            force.z += strength;
+        }
+        if (distToBack < margin) {
+            float strength = repulsionStrength * (1.0 - distToBack/margin);
+            force.z -= strength;
+        }
+        
+        // Smooth the application of force with a sigmoid function
+        // This creates a more natural-feeling forcefield
+        float normalizedDist = minDist / margin;
+        float sigmoid = 1.0 / (1.0 + exp(5.0 * normalizedDist - 2.5));
+        force *= sigmoid;
     }
     
     return force;
@@ -490,12 +519,12 @@ void FlockSystem::setTarget(ofVec3f targetPos) {
 }
 
 ofVec3f FlockSystem::worldToGrid(ofVec3f position) {
-    // Map world position to grid coordinates
+    // Map position to grid coordinates
     int x = (int)((position.x - gridMin.x) / (gridMax.x - gridMin.x) * gridResolution);
     int y = (int)((position.y - gridMin.y) / (gridMax.y - gridMin.y) * gridResolution);
     int z = (int)((position.z - gridMin.z) / (gridMax.z - gridMin.z) * gridResolution);
     
-    // Clamp to valid grid range
+    // Clamp to grid range
     x = ofClamp(x, 0, gridResolution - 1);
     y = ofClamp(y, 0, gridResolution - 1);
     z = ofClamp(z, 0, gridResolution - 1);
@@ -513,19 +542,17 @@ Cell* FlockSystem::getCell(int x, int y, int z) {
 }
 
 void FlockSystem::removeBoid(Boid* boid) {
-    // Find the boid in the vector
+    // Locate the boid
     auto it = std::find(boids.begin(), boids.end(), boid);
     if (it != boids.end()) {
-        // Remove from vector
+        // Remove and delete
         boids.erase(it);
-        
-        // Delete the boid
         delete boid;
     }
 }
 
 void FlockSystem::clear() {
-    // Delete all boids
+    // Remove all boids
     for (int i = 0; i < boids.size(); i++) {
         delete boids[i];
     }
@@ -537,28 +564,28 @@ void FlockSystem::setColorBasedFlocking(bool enabled, float threshold, float inf
     colorSimilarityThreshold = threshold;
     colorInfluenceFactor = influence;
     
-    // Set to 1.0 by default to make boids only follow similar colors
+    // Default to 1.0 for similar colors
     if (enabled && influence == 0) {
         colorInfluenceFactor = 1.0;
     }
 }
 
 float FlockSystem::getColorSimilarity(Boid* boid1, Boid* boid2) {
-    // Calculate color similarity (0 to 1)
+    // Calculate color similarity
     float h1, s1, b1, h2, s2, b2;
     boid1->color.getHsb(h1, s1, b1);
     boid2->color.getHsb(h2, s2, b2);
     
-    // Calculate hue distance (wrapping around 360 degrees)
+    // Calculate hue distance
     float hueDist = fabs(h1 - h2);
     if (hueDist > 180) hueDist = 360 - hueDist;
-    hueDist /= 180.0; // normalize to 0-1
+    hueDist /= 180.0; 
     
     // Calculate saturation and brightness distances
     float satDist = fabs(s1 - s2) / 255.0;
     float briDist = fabs(b1 - b2) / 255.0;
     
-    // Weighted sum (hue is more important for color similarity)
+    // Weighted sum for similarity
     float similarity = 1.0 - (hueDist * 0.6 + satDist * 0.2 + briDist * 0.2);
     
     return similarity;

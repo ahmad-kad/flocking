@@ -1,7 +1,7 @@
 #include "ConfigManager.h"
 
 ConfigManager::ConfigManager() {
-    // Load existing presets or create defaults if none exist
+    // Load presets or create defaults
     if (!ofFile::doesFileExist(ofToDataPath("presets.json"))) {
         createDefaultPresets();
         savePresetsToFile();
@@ -11,10 +11,10 @@ ConfigManager::ConfigManager() {
 }
 
 void ConfigManager::savePreset(const string& name, const FlockingPreset& preset) {
-    // Check if preset with this name already exists
+    // Check for existing preset
     for (int i = 0; i < presets.size(); i++) {
         if (presets[i].name == name) {
-            // Update existing preset
+            // Update preset
             presets[i] = preset;
             savePresetsToFile();
             return;
@@ -58,7 +58,7 @@ void ConfigManager::savePresetsToFile(const string& filename) {
     // Create JSON object
     ofJson json;
     
-    // Add presets array
+    // Add presets
     for (int i = 0; i < presets.size(); i++) {
         ofJson presetJson;
         presetJson["name"] = presets[i].name;
@@ -95,7 +95,7 @@ void ConfigManager::savePresetsToFile(const string& filename) {
 }
 
 void ConfigManager::loadPresetsFromFile(const string& filename) {
-    // Clear current presets
+    // Clear presets
     presets.clear();
     
     // Check if file exists
@@ -148,9 +148,9 @@ void ConfigManager::createDefaultPresets() {
     defaultPreset.separationWeight = 1.5;
     defaultPreset.alignmentWeight = 1.0;
     defaultPreset.cohesionWeight = 1.0;
-    defaultPreset.maxSpeed = 3.0;
-    defaultPreset.minSpeed = 0.5;
-    defaultPreset.maxForce = 0.5;
+    defaultPreset.maxSpeed = 0.1;
+    defaultPreset.minSpeed = 0.05;
+    defaultPreset.maxForce = 0.05;
     defaultPreset.neighborhoodRadius = 3.0;
     defaultPreset.separationRadius = 1.5;
     defaultPreset.boundaryWeight = 1.0;
@@ -182,7 +182,7 @@ void ConfigManager::createDefaultPresets() {
     // Predator-Prey preset
     FlockingPreset predatorPreyPreset = defaultPreset;
     predatorPreyPreset.name = "Predator-Prey";
-    predatorPreyPreset.maxSpeed = 4.0;
+    predatorPreyPreset.maxSpeed = 0.15;
     predatorPreyPreset.individualismFactor = 0.7;
     predatorPreyPreset.boidsVariability = 0.9;
     predatorPreyPreset.flockMode = 3; // Predator-Prey

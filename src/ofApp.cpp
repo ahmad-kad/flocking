@@ -1,19 +1,18 @@
 //  CS 134 - Project 2 - 3D Flocking Simulation
-//
 //  Kevin M. Smith - CS 134 - SJSU CS
 
 #include "ofApp.h"
 
 //--------------------------------------------------------------
-//  Setup Application data
+//  Setup application data
 //
 void ofApp::setup(){
-	// Set up the camera
+	// Camera setup
 	cam.setDistance(15);
 	cam.setNearClip(0.01);
 	cam.setFarClip(1000);
 	
-	// Setup flocking parameters GUI
+	// Flocking parameters GUI
 	flockingGui.setup("Flocking Parameters");
 	flockingGui.add(separationWeight.setup("Separation", 1.5, 0.0, 5.0));
 	flockingGui.add(alignmentWeight.setup("Alignment", 1.0, 0.0, 5.0));
@@ -28,11 +27,11 @@ void ofApp::setup(){
 	flockingGui.add(targetEnabled.setup("Enable Target", false));
 	flockingGui.add(targetWeight.setup("Target Weight", 1.0, 0.0, 5.0));
 	
-	// Setup boid movement parameters
+	// Boid movement parameters
 	flockingGui.add(fieldOfView.setup("Field of View", 240, 90, 360));
-	flockingGui.add(turnRate.setup("Turn Rate", 1.5, 0.5, 5.0));
+    flockingGui.add(turnRate.setup("Turn Rate", 0.8, 0.2, 2.0));
 	
-	// Setup global system parameters GUI
+	// Global system parameters GUI
 	globalGui.setup("Global Parameters");
 	globalGui.add(flockMode.setup("Flock Mode", 0, 0, 3));
 	globalGui.add(individualismFactor.setup("Individualism", 0.2, 0.0, 1.0));
@@ -42,7 +41,7 @@ void ofApp::setup(){
 	globalGui.add(colorInfluence.setup("Color Influence", 0.2, 0.0, 1.0));
 	globalGui.add(colorSimilarityThreshold.setup("Color Threshold", 0.3, 0.0, 1.0));
 	
-	// Setup environment parameters GUI
+	// Environment parameters GUI
 	environmentGui.setup("Environment");
 	environmentGui.add(backgroundColor.set("Background", ofColor(30, 30, 50)));
 	environmentGui.add(resetButton.setup("Reset Simulation"));
@@ -50,7 +49,7 @@ void ofApp::setup(){
 	environmentGui.add(spawnCount.setup("Spawn Count", 10, 1, 100));
 	environmentGui.add(loadMeshButton.setup("Load Boid Mesh"));
 	
-	// Setup debug visualization GUI
+	// Debug visualization GUI
 	debugGui.setup("Debug View");
 	debugGui.add(showDebug.setup("Show Debug", false));
 	debugGui.add(showVelocities.setup("Show Velocities", false));
@@ -58,10 +57,10 @@ void ofApp::setup(){
 	debugGui.add(showForces.setup("Show Forces", false));
 	debugGui.add(showGrid.setup("Show Grid", false));
 	
-    // Setup presets GUI
+    // Presets GUI
     presetsGui.setup("Presets");
     
-    // Get preset names from config manager
+    // Get preset names
     presetNames = configManager.getPresetNames();
     selectedPresetIndex = 0;
     
@@ -80,7 +79,7 @@ void ofApp::setup(){
     presetsGui.add(loadPresetButton.setup("Load Selected"));
     presetsGui.add(savePresetButton.setup("Save Current"));
     
-	// Setup event listeners
+	// Event listeners
 	resetButton.addListener(this, &ofApp::resetSimulation);
 	spawnBoidsButton.addListener(this, &ofApp::spawnBoids);
 	loadMeshButton.addListener(this, &ofApp::loadBoidMesh);
@@ -111,10 +110,10 @@ void ofApp::setup(){
 //--------------------------------------------------------------
 //
 void ofApp::update() {
-	// Don't update if simulation is paused
+	// Skip update if paused
 	if (simulationPaused) return;
 	
-    // Update flocking parameters from GUI
+    // Update flocking parameters
     flockSystem.setParameters(separationWeight, alignmentWeight, cohesionWeight);
     flockSystem.setMaxSpeed(maxSpeed);
     flockSystem.setMinSpeed(minSpeed);
@@ -132,14 +131,14 @@ void ofApp::update() {
     flockSystem.setBoidsVariability(boidsVariability);
     updateFlockMode();
     
-    // Update debug visualization settings
+    // Update debug settings
     flockSystem.showDebug = showDebug;
     flockSystem.showVelocities = showVelocities;
     flockSystem.showNeighborhoods = showNeighborhoods;
     flockSystem.showForces = showForces;
     flockSystem.showGrid = showGrid;
     
-    // Check if we need to add or remove boids
+    // Check for boid count adjustments
     int currentCount = flockSystem.getCount();
     if (boidCount > currentCount) {
         // Add boids
@@ -148,17 +147,17 @@ void ofApp::update() {
     
     // Update target
     if (targetEnabled) {
-        // If using moving target
+        // Move target if enabled
         if (targetMoving) {
             targetTime += ofGetLastFrameTime() * 0.5;
             
-            // Move target in circular path
+            // Circular target movement
             float x = cos(targetTime) * targetPathRadius;
             float z = sin(targetTime) * targetPathRadius;
             targetPosition = ofVec3f(x, 0, z);
         }
         
-        // Set target for flock to follow
+        // Set target for flock
         flockSystem.setTarget(targetPosition);
         flockSystem.targetWeight = targetWeight;
     }
@@ -166,9 +165,9 @@ void ofApp::update() {
         flockSystem.hasTarget = false;
     }
     
-    // Handle strayed boids - remove those that go too far and replace them
+    // Handle strayed boids
     vector<Boid*> boidsToRemove;
-    float maxDistance = 30.0; // Maximum allowed distance from origin
+    float maxDistance = 30.0; // Max distance from origin
     
     for (auto boid : flockSystem.getAllBoids()) {
         if (boid->position.length() > maxDistance) {
@@ -176,13 +175,13 @@ void ofApp::update() {
         }
     }
     
-    // If any boids need to be removed, delete them and spawn replacements
+    // Remove and replace boids if needed
     if (!boidsToRemove.empty()) {
         for (auto boid : boidsToRemove) {
             flockSystem.removeBoid(boid);
         }
         
-        // Spawn replacement boids
+        // Spawn replacements
         flockSystem.addBoids(boidsToRemove.size(), ofVec3f(0, 0, 0), 3.0);
     }
     
@@ -192,10 +191,10 @@ void ofApp::update() {
 
 //--------------------------------------------------------------
 void ofApp::draw(){
-	// Set background color from GUI
+	// Set background color
 	ofBackground(backgroundColor);
 
-	// Draw the GUI panels if not hidden
+	// Draw GUI panels if visible
 	if (!bHide) {
 		flockingGui.draw();
 		globalGui.draw();
@@ -204,10 +203,10 @@ void ofApp::draw(){
         presetsGui.draw();
 	}
 
-	// Begin drawing in the camera
+	// Begin camera drawing
 	cam.begin();
 
-	// Draw a grid
+	// Draw grid
 	ofPushMatrix();
 	ofRotateDeg(90, 0, 0, 1);
 	ofSetLineWidth(1);
@@ -215,7 +214,7 @@ void ofApp::draw(){
 	ofDrawGridPlane();
 	ofPopMatrix();
 
-	// Draw the flocking system - use the boid mesh from the model if available
+	// Draw flocking system
 	if (customMeshLoaded) {
 		flockSystem.draw(&boidMesh);
 	} else {
@@ -230,7 +229,7 @@ void ofApp::draw(){
 		ofPopStyle();
 	}
 
-	// End drawing in the camera 
+	// End camera drawing 
 	cam.end();
 
 	// Draw screen data
@@ -250,7 +249,7 @@ void ofApp::draw(){
 	ofSetColor(ofColor::white);
 	ofDrawBitmapString(str, ofGetWindowWidth() - 250, 15);
     
-    // Draw preset selection if not hidden
+    // Draw preset selection if visible
     if (!bHide && presetNames.size() > 0) {
         // Draw preset selector
         ofPushStyle();
@@ -299,7 +298,7 @@ void ofApp::resetSimulation() {
 	// Clear all boids
 	flockSystem.clear();
 	
-	// Add new boids based on current count setting
+	// Add new boids based on current count
 	flockSystem.addBoids(boidCount, ofVec3f(0, 0, 0), 5.0);
 	
 	// Reset target
@@ -309,10 +308,10 @@ void ofApp::resetSimulation() {
 
 //--------------------------------------------------------------
 void ofApp::spawnBoids() {
-	// Add specified number of boids at position
+	// Add specified number of boids
 	flockSystem.addBoids(spawnCount, ofVec3f(0, 0, 0), 3.0);
 	
-	// Update the boid count slider
+	// Update boid count slider
 	boidCount = flockSystem.getCount();
 }
 
@@ -328,29 +327,30 @@ void ofApp::loadBoidMesh() {
 
 //--------------------------------------------------------------
 void ofApp::loadMeshFromPath(const string& path) {
-    // Reset the mesh state
+    // Reset mesh state
     customMeshLoaded = false;
     
-    // Load mesh file using Assimp
+    // Load mesh file
     if (ofFile::doesFileExist(path)) {
         ofLogNotice() << "Attempting to load model: " << path;
         
         try {
-            // Load the model using Assimp which supports multiple formats (obj, ply, fbx, etc.)
-            // Use load() instead of loadModel() which is deprecated
+            // Load model using Assimp
             bool loaded = boidModel.load(path, true); // true = optimize mesh
             
             if (loaded) {
                 ofLogNotice() << "Successfully loaded model with " << boidModel.getMeshCount() << " meshes";
                 
-                // For compatibility with existing code, extract the first mesh
+                // Extract the first mesh
                 if (boidModel.getMeshCount() > 0) {
-                    // Get the first mesh from the model
                     boidMesh = boidModel.getMesh(0);
                     
-                    // Normalize and center the model
-                    boidModel.setScale(100,1,1); // Scale down the model
-                    // boidModel.setScaleNormalization(true); // Normalize size
+                    // Scale the mesh vertices directly
+                    for (int i = 0; i < boidMesh.getNumVertices(); i++) {
+                        ofVec3f vertex = boidMesh.getVertex(i);
+                        vertex *= 10.0; // Apply a large scale factor
+                        boidMesh.setVertex(i, vertex);
+                    }
                     
                     meshPath = path;
                     customMeshLoaded = true;
@@ -420,7 +420,7 @@ void ofApp::savePreset() {
 
 //--------------------------------------------------------------
 void ofApp::updateUIFromPreset(const FlockingPreset& preset) {
-    // Update basic parameters
+    // Update parameters
     separationWeight = preset.separationWeight;
     alignmentWeight = preset.alignmentWeight;
     cohesionWeight = preset.cohesionWeight;
@@ -443,7 +443,7 @@ void ofApp::updateUIFromPreset(const FlockingPreset& preset) {
 
 //--------------------------------------------------------------
 void ofApp::updatePresetFromUI(FlockingPreset& preset) {
-    // Copy basic parameters
+    // Copy parameters
     preset.separationWeight = separationWeight;
     preset.alignmentWeight = alignmentWeight;
     preset.cohesionWeight = cohesionWeight;
@@ -469,15 +469,15 @@ void ofApp::positionGUIPanels() {
     int guiWidth = 200;
     int padding = 10;
     
-    // Left side panels - top to bottom
+    // Left side panels
     flockingGui.setPosition(padding, padding);
     debugGui.setPosition(padding, flockingGui.getPosition().y + flockingGui.getHeight() + padding);
     
-    // Right side panels - top to bottom
+    // Right side panels
     globalGui.setPosition(ofGetWidth() - guiWidth - padding, padding);
     environmentGui.setPosition(ofGetWidth() - guiWidth - padding, globalGui.getPosition().y + globalGui.getHeight() + padding);
     
-    // Middle panels - left to right
+    // Middle panels
     presetsGui.setPosition(flockingGui.getPosition().x + flockingGui.getWidth() + padding, padding);
 }
 
@@ -491,7 +491,7 @@ void ofApp::updateFlockMode() {
         flockSystem.boundaryDistance = 5.0;
         flockSystem.setSystemChaos(0.1);
         flockSystem.setBoidsVariability(0.3);
-        flockSystem.setColorBasedFlocking(colorBasedFlocking, colorSimilarityThreshold, 1.0); // Fixed parameter order and full color influence
+        flockSystem.setColorBasedFlocking(colorBasedFlocking, colorSimilarityThreshold, 1.0);
     }
     else if (flockMode == 1) { // Excited
         flockSystem.setSeparationRadius(1.5);
@@ -501,7 +501,7 @@ void ofApp::updateFlockMode() {
         flockSystem.boundaryDistance = 5.0;
         flockSystem.setSystemChaos(0.3);
         flockSystem.setBoidsVariability(0.5);
-        flockSystem.setColorBasedFlocking(colorBasedFlocking, colorSimilarityThreshold, 1.0); // Fixed parameter order and full color influence
+        flockSystem.setColorBasedFlocking(colorBasedFlocking, colorSimilarityThreshold, 1.0);
     }
     else if (flockMode == 2) { // Chaotic
         flockSystem.setSeparationRadius(1.0);
@@ -511,7 +511,7 @@ void ofApp::updateFlockMode() {
         flockSystem.boundaryDistance = 5.0;
         flockSystem.setSystemChaos(0.6);
         flockSystem.setBoidsVariability(0.8);
-        flockSystem.setColorBasedFlocking(colorBasedFlocking, colorSimilarityThreshold, 1.0); // Fixed parameter order and full color influence
+        flockSystem.setColorBasedFlocking(colorBasedFlocking, colorSimilarityThreshold, 1.0);
     }
 }
 
@@ -574,7 +574,7 @@ void ofApp::keyPressed(int key){
 	case '2':
 	case '3':
 	case '4':
-        // Check if we're in preset selection mode (GUI not hidden and presets shown)
+        // Check if in preset selection mode
         if (!bHide && key >= '1' && key <= '0' + presetNames.size()) {
             // Select preset
             selectedPresetIndex = key - '1';
@@ -582,18 +582,17 @@ void ofApp::keyPressed(int key){
             // Update preset name in UI
             presetNameParam = presetNames[selectedPresetIndex];
         } else {
-            // Change flock mode instead
+            // Change flock mode
             flockMode = key - '1'; // Map 1-4 to 0-3
         }
 		break;
 	case 't':
 		{
-			// Place target at current mouse position (projected into 3D space)
-			// Get the current mouse position
+			// Place target at mouse position
 			glm::vec3 mouseWorld = cam.screenToWorld(glm::vec3(ofGetMouseX(), ofGetMouseY(), 0));
 			glm::vec3 mouseDirection = glm::normalize(mouseWorld - cam.getPosition());
 			
-			// Calculate intersection with XZ plane (y=0)
+			// Calculate intersection with XZ plane
 			float t = -cam.getPosition().y / mouseDirection.y;
 			glm::vec3 planeIntersection = cam.getPosition() + mouseDirection * t;
 			
@@ -636,17 +635,17 @@ void ofApp::mouseDragged(int x, int y, int button){
 
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button){
-    // Check if clicking on a preset in the list
+    // Check if clicking on a preset
     if (!bHide && presetNames.size() > 0) {
         int presetsX = presetsGui.getPosition().x;
         int presetsY = presetsGui.getPosition().y + presetsGui.getHeight() + 10;
         
-        // Check if mouse is in the preset selection area
+        // Check if mouse is in preset selection area
         if (x >= presetsX && x < presetsX + 200) {
             for (int i = 0; i < presetNames.size(); i++) {
                 int itemY = presetsY + 15 * (i + 1);
                 if (y >= itemY - 12 && y < itemY + 3) {
-                    // Selected this preset
+                    // Selected preset
                     selectedPresetIndex = i;
                     presetNameParam = presetNames[selectedPresetIndex];
                     break;
@@ -684,14 +683,14 @@ void ofApp::gotMessage(ofMessage msg){
 
 //--------------------------------------------------------------
 void ofApp::dragEvent(ofDragInfo dragInfo){ 
-	// If files are dragged onto the window, try to load the first one as a mesh
+	// Load first file as mesh if dragged
 	if (!dragInfo.files.empty()) {
 		string path = dragInfo.files[0];
 		loadMeshFromPath(path);
 	}
 }
 
-// Add new method to update boid parameters
+// Update boid parameters
 void ofApp::updateBoidParameters() {
     // Update field of view and turn rate for all boids
     for (auto boid : flockSystem.getAllBoids()) {
