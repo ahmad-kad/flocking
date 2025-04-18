@@ -37,6 +37,7 @@ class ofApp : public ofBaseApp{
 		ofxPanel debugGui;
 		ofxPanel presetsGui;
 		ofxPanel foodSystemGui;
+		ofxPanel legendGui;    // New panel for the legend
 		
 		// Core systems
 		FlockSystem flockSystem;
@@ -115,6 +116,11 @@ class ofApp : public ofBaseApp{
         int selectedPresetIndex;
         ofxButton loadPresetButton;
         ofxButton savePresetButton;
+
+        // Legend parameters
+        ofxLabel legendTitle;
+        ofxToggle showLegend;
+        void drawLegend();
 
 		// Helper methods
 		void resetSimulation();

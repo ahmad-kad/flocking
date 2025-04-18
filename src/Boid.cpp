@@ -120,6 +120,57 @@ void Boid::update(float deltaTime, TerrainSystem* terrain, Octree* octree) {
         attackCooldown -= deltaTime;
     }
     
+    // Apply speed limits based on movement type and trophic level
+    float typeMaxSpeed = maxSpeed;
+    
+    // Movement type modifications
+    if (movementType == MovementType::AERIAL) {
+        // Aerial creatures move slower to prevent excessive speed
+        typeMaxSpeed *= 0.6f;
+    } else if (movementType == MovementType::TERRESTRIAL) {
+        // Terrestrial creatures are slightly slower
+        typeMaxSpeed *= 0.8f;
+    }
+    
+    // Trophic level modifications
+    if (trophicLevel == TrophicLevel::APEX_PREDATOR) {
+        // Apex predators move faster when hunting
+        if (behaviorState == BehaviorState::HUNTING) {
+            typeMaxSpeed *= 1.2f;
+        }
+    } else if (trophicLevel == TrophicLevel::PREY) {
+        // Prey move faster when fleeing
+        if (behaviorState == BehaviorState::FLEEING) {
+            typeMaxSpeed *= 1.3f;
+        } else if (behaviorState == BehaviorState::FEEDING) {
+            typeMaxSpeed *= 0.5f; // Much slower when feeding
+        }
+    }
+    
+    // Limit velocity to max speed
+    if (velocity.length() > typeMaxSpeed) {
+        velocity.normalize();
+        velocity *= typeMaxSpeed;
+    }
+    
+    // Ensure minimum speed 
+    if (velocity.length() < minSpeed && velocity.length() > 0) {
+        velocity.normalize();
+        velocity *= minSpeed;
+    }
+    
+    // Store previous direction
+    previousDirection = velocity.getNormalized();
+    
+    // Apply forces to modify velocity
+    velocity += acceleration * deltaTime;
+    
+    // Reset acceleration
+    acceleration = ofVec3f(0, 0, 0);
+    
+    // Update positions
+    position += velocity * deltaTime;
+    
     // Update behavior based on state
     ofVec3f steeringForce = ofVec3f(0, 0, 0);
     
@@ -476,7 +527,7 @@ ofVec3f Boid::flee(const ofVec3f& target) {
     return ofVec3f(0, 0, 0);
 }
 
-void Boid::applyForce(const ofVec3f& force) {
+void Boid::applyForce(ofVec3f force) {
     // Apply force to acceleration based on mass (size)
     acceleration += force / size;
 }
@@ -486,60 +537,129 @@ bool Boid::isHungry() const {
 }
 
 void Boid::draw(ofMesh* customMesh) {
-    // Draw the boid
-    ofPushStyle();
     ofPushMatrix();
+    ofPushStyle();
     
-    // Set color based on behavioral state
-    ofColor drawColor = personalColor;
-    
-    // Adjust color based on behavioral state
-    switch (behaviorState) {
-        case BehaviorState::HUNTING:
-            drawColor = drawColor.lerp(ofColor(255, 0, 0), 0.3f);
+    // Set base color based on trophic level
+    ofColor boidColor;
+    switch (trophicLevel) {
+        case TrophicLevel::APEX_PREDATOR:
+            boidColor = ofColor(220, 50, 50, 200); // Stronger red for apex predators
             break;
-            
-        case BehaviorState::FEEDING:
-            drawColor = drawColor.lerp(ofColor(255, 255, 0), 0.3f);
+        case TrophicLevel::MID_PREDATOR:
+            boidColor = ofColor(220, 100, 50, 200); // Orange-red for mid predators
             break;
-            
-        case BehaviorState::FLEEING:
-            drawColor = drawColor.lerp(ofColor(100, 100, 255), 0.3f);
+        case TrophicLevel::PREY:
+            boidColor = ofColor(100, 220, 100, 200); // Green for prey
             break;
-            
+        case TrophicLevel::APEX_PREY:
+            boidColor = ofColor(50, 180, 220, 200); // Blue-green for apex prey
+            break;
         default:
-            break;
+            boidColor = ofColor(200, 200, 200, 200); // Gray for undefined
     }
     
-    ofSetColor(drawColor);
+    // Modify color based on behavior state - make more distinct
+    if (behaviorState == BehaviorState::HUNTING) {
+        boidColor = boidColor.getLerped(ofColor(255, 0, 0), 0.7); // Stronger red tint when hunting
+    } else if (behaviorState == BehaviorState::FLEEING) {
+        boidColor = boidColor.getLerped(ofColor(255, 255, 0), 0.7); // Stronger yellow tint when fleeing
+    } else if (behaviorState == BehaviorState::FEEDING) {
+        boidColor = boidColor.getLerped(ofColor(0, 255, 0), 0.7); // Stronger green tint when feeding
+    }
+    
+    // Adjust visual representation based on movement type
+    if (movementType == MovementType::AERIAL) {
+        // More transparent for aerial creatures
+        ofSetColor(boidColor, 180);
+    } else if (movementType == MovementType::TERRESTRIAL) {
+        // Terrestrial creatures are more solid
+        ofSetColor(boidColor, 255);
+    }
     
     // Translate to position
     ofTranslate(position);
     
     // Rotate to face velocity direction
-    if (velocity.length() > 0.001) {
-        // Calculate angle
-        ofVec3f axis = ofVec3f(0, 1, 0).getCrossed(velocity);
-        float angle = acos(ofVec3f(0, 1, 0).dot(velocity.getNormalized())) * RAD_TO_DEG;
-        if (axis.length() > 0.001) {
-            ofRotateDeg(angle, axis.x, axis.y, axis.z);
+    ofVec3f forward = velocity.getNormalized();
+    ofVec3f up(0, 1, 0);
+    
+    if (forward.length() > 0) {
+        ofVec3f right = up.getCrossed(forward).getNormalized();
+        up = forward.getCrossed(right).getNormalized();
+        
+        // Fix rotation matrix setup
+        float rotAngle = ofRadToDeg(atan2(forward.z, forward.x));
+        ofRotateDeg(rotAngle, 0, 1, 0);
+        ofRotateDeg(ofRadToDeg(asin(-forward.y)), 1, 0, 0);
+    }
+    
+    // Draw custom mesh if available, otherwise draw default shape
+    if (customMesh != nullptr) {
+        // Scale the mesh based on size and trophic level
+        float scaleFactor = size;
+        ofScale(scaleFactor, scaleFactor, scaleFactor);
+        
+        customMesh->draw();
+    } else {
+        // Draw distinct shapes based on trophic level and movement type
+        if (trophicLevel == TrophicLevel::APEX_PREDATOR || trophicLevel == TrophicLevel::MID_PREDATOR) {
+            // Predator shape - sharper cone for better visibility
+            ofDrawCone(0, 0, 0, size * 0.8f, size * 2.5f);
+        } else if (trophicLevel == TrophicLevel::PREY) {
+            // Different shapes based on movement type
+            if (movementType == MovementType::AERIAL) {
+                // Bird shape with wingspan
+                ofPushMatrix();
+                // Body
+                ofDrawSphere(0, 0, 0, size * 0.6f);
+                
+                // Wings
+                float wingScale = size * 1.8f;
+                float wingHeight = size * 0.1f;
+                ofPushMatrix();
+                ofRotateDeg(sin(ofGetElapsedTimef() * 2.0) * 20, 0, 0, 1); // Wing flapping animation
+                ofDrawBox(-wingScale/2, 0, 0, wingScale, wingHeight, size * 0.8f);
+                ofPopMatrix();
+                
+                ofPushMatrix();
+                ofRotateDeg(-sin(ofGetElapsedTimef() * 2.0) * 20, 0, 0, 1); // Wing flapping animation
+                ofDrawBox(wingScale/2, 0, 0, wingScale, wingHeight, size * 0.8f);
+                ofPopMatrix();
+                ofPopMatrix();
+            } else if (movementType == MovementType::TERRESTRIAL) {
+                // More defined quadruped shape
+                ofDrawSphere(0, 0, 0, size * 1.2f); // Body
+                ofDrawSphere(0, -size * 0.8f, size * 0.8f, size * 0.5f); // Head
+            } else {
+                // Default shape - slightly elliptical
+                ofDrawSphere(0, 0, 0, size);
+            }
+        } else if (trophicLevel == TrophicLevel::APEX_PREY) {
+            // Special prey with distinctive shape
+            if (movementType == MovementType::AERIAL) {
+                // Distinctive flying creature
+                ofDrawSphere(0, 0, 0, size * 1.2f);
+                
+                // Add wings
+                ofPushMatrix();
+                ofRotateDeg(90, 0, 1, 0);
+                ofDrawCylinder(-size * 1.2f, 0, size * 0.1f, size * 0.8f);
+                ofDrawCylinder(size * 1.2f, 0, size * 0.1f, size * 0.8f);
+                ofPopMatrix();
+            } else {
+                // More rounded special prey shape
+                ofDrawSphere(0, 0, 0, size * 1.0f); // Body
+                ofDrawSphere(0, -size * 0.8f, size * 0.8f, size * 0.6f); // Head
+            }
+        } else {
+            // Default shape
+            ofDrawSphere(0, 0, 0, size);
         }
     }
     
-    // Draw custom mesh if provided
-    if (customMesh != nullptr) {
-        // Scale based on boid size
-        ofScale(size, size, size);
-        
-        // Draw the custom mesh
-        customMesh->draw();
-    } else {
-        // Draw default representation (cone pointing in direction of velocity)
-        ofDrawCone(0, -size, 0, size * 0.5f, size);
-    }
-    
-    ofPopMatrix();
     ofPopStyle();
+    ofPopMatrix();
 }
 
 void Boid::drawDebug(bool showVelocity, bool showNeighborhood, bool showForces) {
@@ -547,96 +667,78 @@ void Boid::drawDebug(bool showVelocity, bool showNeighborhood, bool showForces) 
     
     // Draw velocity vector
     if (showVelocity) {
-        ofSetColor(255, 100, 100);
-        ofDrawArrow(position, position + velocity * 2.0f, 0.1f);
+        ofSetColor(0, 200, 200);
+        ofDrawArrow(position, position + velocity, 5);
     }
     
-    // Draw neighborhood radius
+    // Draw neighborhood sphere
     if (showNeighborhood) {
-        ofSetColor(100, 100, 255, 50);
-        ofNoFill();
+        ofColor neighborhoodColor(200, 200, 0, 40);
+        ofSetColor(neighborhoodColor);
         ofDrawSphere(position, neighborhoodRadius);
-        
-        ofSetColor(255, 100, 100, 80);
-        ofDrawSphere(position, separationRadius);
     }
     
-    // Draw forces
+    // Draw forces if requested
     if (showForces) {
-        // Position for force vector origin
-        ofVec3f forceOrigin = position + ofVec3f(0, 1, 0);
-        
         // Draw separation force
-        ofSetColor(255, 0, 0);
-        ofDrawArrow(forceOrigin, forceOrigin + separationForce * 5.0f, 0.05f);
+        ofSetColor(255, 0, 0, 200);
+        ofDrawArrow(position, position + separationForce * 2.0, 2);
         
         // Draw alignment force
-        ofSetColor(0, 255, 0);
-        ofDrawArrow(forceOrigin, forceOrigin + alignmentForce * 5.0f, 0.05f);
+        ofSetColor(0, 255, 0, 200);
+        ofDrawArrow(position, position + alignmentForce * 2.0, 2);
         
         // Draw cohesion force
-        ofSetColor(0, 0, 255);
-        ofDrawArrow(forceOrigin, forceOrigin + cohesionForce * 5.0f, 0.05f);
-        
-        // Draw wander force
-        ofSetColor(255, 255, 0);
-        ofDrawArrow(forceOrigin, forceOrigin + wanderForce * 5.0f, 0.05f);
+        ofSetColor(0, 0, 255, 200);
+        ofDrawArrow(position, position + cohesionForce * 2.0, 2);
         
         // Draw seek force if applicable
         if (seekForce.length() > 0) {
-            ofSetColor(255, 0, 255);
-            ofDrawArrow(forceOrigin, forceOrigin + seekForce * 5.0f, 0.05f);
-        }
-    }
-    
-    // Draw field of view
-    if (showNeighborhood && velocity.length() > 0.001) {
-        ofSetColor(255, 255, 255, 40);
-        
-        ofPushMatrix();
-        ofTranslate(position);
-        
-        // Create orientation matrix from velocity
-        ofVec3f forward = velocity.getNormalized();
-        ofVec3f axis = ofVec3f(0, 1, 0).getCrossed(forward);
-        float angle = acos(ofVec3f(0, 1, 0).dot(forward)) * RAD_TO_DEG;
-        
-        if (axis.length() > 0.001) {
-            ofRotateDeg(angle, axis.x, axis.y, axis.z);
+            ofSetColor(255, 0, 255, 200);
+            ofDrawArrow(position, position + seekForce * 2.0, 2);
         }
         
-        // Draw field of view cone
-        ofFill();
-        ofDrawCone(0, 0, 0, neighborhoodRadius * sin(fieldOfView * DEG_TO_RAD * 0.5f), neighborhoodRadius);
+        // Draw wander force
+        ofSetColor(255, 255, 0, 200);
+        ofDrawArrow(position, position + wanderForce * 2.0, 2);
         
-        ofPopMatrix();
+        // Draw boundary force
+        ofSetColor(0, 255, 255, 200);
+        ofDrawArrow(position, position + boundaryForce * 2.0, 2);
     }
     
-    // Draw current state
+    // Draw current state text
+    ofColor stateColor;
+    string stateText = "";
+    
     switch (behaviorState) {
+        case BehaviorState::NORMAL:
+            stateColor = ofColor(200, 200, 200);
+            stateText = "NORMAL";
+            break;
         case BehaviorState::HUNTING:
-            ofSetColor(255, 0, 0);
-            ofDrawBitmapString("Hunting", position + ofVec3f(0, 2, 0));
+            stateColor = ofColor(255, 0, 0);
+            stateText = "HUNTING";
             break;
-            
         case BehaviorState::FLEEING:
-            ofSetColor(0, 0, 255);
-            ofDrawBitmapString("Fleeing", position + ofVec3f(0, 2, 0));
+            stateColor = ofColor(255, 255, 0);
+            stateText = "FLEEING";
             break;
-            
         case BehaviorState::FEEDING:
-            ofSetColor(0, 255, 0);
-            ofDrawBitmapString("Feeding", position + ofVec3f(0, 2, 0));
+            stateColor = ofColor(0, 255, 0);
+            stateText = "FEEDING";
             break;
-            
-        case BehaviorState::RESTING:
-            ofSetColor(100, 100, 100);
-            ofDrawBitmapString("Resting", position + ofVec3f(0, 2, 0));
+        case BehaviorState::HIDING:
+            stateColor = ofColor(150, 150, 255);
+            stateText = "HIDING";
             break;
-            
         default:
-            break;
+            stateColor = ofColor(200, 200, 200);
+            stateText = "UNKNOWN";
     }
+    
+    ofSetColor(stateColor);
+    ofDrawBitmapString(stateText, position + ofVec3f(0, 0, 20));
     
     ofPopStyle();
 }
@@ -1067,4 +1169,26 @@ ofVec3f Boid::seekFood(const std::vector<FoodSource*>& foodSources) {
     }
     
     return ofVec3f(0, 0, 0);
-} 
+}
+
+void Boid::updateParameters() {
+    // Adjust parameters based on current state and trophic level
+    
+    // Adjust speed based on trophic level and current behavior
+    if (trophicLevel == TrophicLevel::APEX_PREDATOR) {
+        // Predators move slower when patrolling but faster when hunting
+        if (behaviorState == BehaviorState::HUNTING) {
+            maxSpeed = maxSpeed * 1.5f; // Faster when pursuing prey
+        } else {
+            maxSpeed = maxSpeed * 0.7f; // Slower during normal movement
+        }
+    } else if (trophicLevel == TrophicLevel::PREY) {
+        // Prey move at normal speed when normal, faster when fleeing
+        if (behaviorState == BehaviorState::FLEEING) {
+            maxSpeed = maxSpeed * 1.3f; // Faster when fleeing
+        } else if (behaviorState == BehaviorState::FEEDING) {
+            maxSpeed = minSpeed; // Very slow when feeding
+        }
+    }
+}
+

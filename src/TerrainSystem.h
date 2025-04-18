@@ -63,6 +63,7 @@ public:
     int getDepth() const { return height; }
     float getHeightScale() const { return maxHeight; }
     float getRoughness() const { return roughnessFactor; }
+    bool isInitialized() const { return !cells.empty(); }
     
 private:
     // Generation parameters

@@ -60,6 +60,20 @@ void FoodSource::update(float deltaTime) {
             available = true;
         }
     }
+    
+    // Add movement for insect swarms only
+    if (type == FoodSourceType::INSECT_SWARM && available) {
+        // Create a gentle random movement for insect swarms
+        float time = ofGetElapsedTimef() * 0.5f;
+        float xMovement = sin(time + position.x * 0.1f) * 0.2f;
+        float yMovement = cos(time * 1.2f + position.y * 0.1f) * 0.1f;
+        float zMovement = sin(time * 0.8f + position.z * 0.1f) * 0.2f;
+        
+        // Update position with small random movements
+        position.x += xMovement;
+        position.y += yMovement + sin(time) * 0.05f; // Add slight up/down movement
+        position.z += zMovement;
+    }
 }
 
 float FoodSource::consume(Boid* consumer) {

@@ -99,7 +99,7 @@ public:
     // Movement helpers
     ofVec3f seek(const ofVec3f& target);
     ofVec3f flee(const ofVec3f& target);
-    void applyForce(const ofVec3f& force);
+    void applyForce(ofVec3f force);
     bool isInFieldOfView(Boid* other);
     
     // Environment interaction helpers
@@ -129,4 +129,10 @@ public:
     ofVec3f seekForce;
     ofVec3f wanderForce;
     ofVec3f boundaryForce;
+    
+    // Parameter update
+    void updateParameters();
+    
+    // Predator-prey methods
+    void huntAsPredator(vector<Boid*>& potentialPrey);
 }; 

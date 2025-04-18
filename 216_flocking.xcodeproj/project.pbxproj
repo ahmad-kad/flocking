@@ -23,6 +23,20 @@
 		E4B69E210A3A1BDC003C02F2 /* ofApp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E4B69E1E0A3A1BDC003C02F2 /* ofApp.cpp */; };
 		"E4FDDBD0-E736-4877-8EE7-7683E3479D47" /* ofxLabel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = "9C284990-A791-4D12-9009-8F272AA223EB" /* ofxLabel.cpp */; };
 		"EE114024-A7EA-46E9-8FCA-A359888EA799" /* ofxAssimpModelLoader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = "D54AEA9C-E5B5-419C-A4BB-E683BD84D4B6" /* ofxAssimpModelLoader.cpp */; };
+		F68246542DB220ED004AAC26 /* Particle.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F682464F2DB220ED004AAC26 /* Particle.cpp */; };
+		F68246552DB220ED004AAC26 /* ConfigManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F682463B2DB220EC004AAC26 /* ConfigManager.cpp */; };
+		F68246562DB220ED004AAC26 /* Genetics.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F68246462DB220ED004AAC26 /* Genetics.cpp */; };
+		F68246572DB220ED004AAC26 /* Species.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F68246512DB220ED004AAC26 /* Species.cpp */; };
+		F68246582DB220ED004AAC26 /* TerrainSystem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F68246532DB220ED004AAC26 /* TerrainSystem.cpp */; };
+		F68246592DB220ED004AAC26 /* FoodManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F68246422DB220ED004AAC26 /* FoodManager.cpp */; };
+		F682465A2DB220ED004AAC26 /* EventManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F682463E2DB220EC004AAC26 /* EventManager.cpp */; };
+		F682465B2DB220ED004AAC26 /* Boid.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F68246392DB220EC004AAC26 /* Boid.cpp */; };
+		F682465C2DB220ED004AAC26 /* Octree.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F682464B2DB220ED004AAC26 /* Octree.cpp */; };
+		F682465D2DB220ED004AAC26 /* FoodSource.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F68246442DB220ED004AAC26 /* FoodSource.cpp */; };
+		F682465E2DB220ED004AAC26 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F68246492DB220ED004AAC26 /* main.cpp */; };
+		F682465F2DB220ED004AAC26 /* ofApp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F682464D2DB220ED004AAC26 /* ofApp.cpp */; };
+		F68246602DB220ED004AAC26 /* LifeCycle.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F68246482DB220ED004AAC26 /* LifeCycle.cpp */; };
+		F68246612DB220ED004AAC26 /* FlockSystem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F68246402DB220EC004AAC26 /* FlockSystem.cpp */; };
 		F6F3C33B2D8F993400F06A22 /* FlockSystem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F6F3C3352D8F993400F06A22 /* FlockSystem.cpp */; };
 		F6F3C33C2D8F993400F06A22 /* ofApp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F6F3C3382D8F993400F06A22 /* ofApp.cpp */; };
 		F6F3C33D2D8F993400F06A22 /* Particle.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F6F3C33A2D8F993400F06A22 /* Particle.cpp */; };
@@ -167,6 +181,34 @@
 		"F13254E5-2DE9-4268-9A03-0319D8624504" /* ofxButton.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = ofxButton.cpp; path = /Users/ahmadkaddoura/Downloads/of_v0.12.0_osx_release/addons/ofxGui/src/ofxButton.cpp; sourceTree = SOURCE_ROOT; };
 		"F256E16E-0F2A-4A58-8A9A-393DE77FFD81" /* DefaultIOSystem.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; name = DefaultIOSystem.h; path = /Users/ahmadkaddoura/Downloads/of_v0.12.0_osx_release/addons/ofxAssimpModelLoader/libs/assimp/include/assimp/DefaultIOSystem.h; sourceTree = SOURCE_ROOT; };
 		"F5816BE6-878F-4248-A912-D6745954AA50" /* ofxAssimpTexture.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = ofxAssimpTexture.cpp; path = /Users/ahmadkaddoura/Downloads/of_v0.12.0_osx_release/addons/ofxAssimpModelLoader/src/ofxAssimpTexture.cpp; sourceTree = SOURCE_ROOT; };
+		F68246382DB220EC004AAC26 /* Boid.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Boid.h; sourceTree = "<group>"; };
+		F68246392DB220EC004AAC26 /* Boid.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Boid.cpp; sourceTree = "<group>"; };
+		F682463A2DB220EC004AAC26 /* ConfigManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ConfigManager.h; sourceTree = "<group>"; };
+		F682463B2DB220EC004AAC26 /* ConfigManager.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ConfigManager.cpp; sourceTree = "<group>"; };
+		F682463C2DB220EC004AAC26 /* EcosystemTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = EcosystemTypes.h; sourceTree = "<group>"; };
+		F682463D2DB220EC004AAC26 /* EventManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = EventManager.h; sourceTree = "<group>"; };
+		F682463E2DB220EC004AAC26 /* EventManager.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = EventManager.cpp; sourceTree = "<group>"; };
+		F682463F2DB220EC004AAC26 /* FlockSystem.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FlockSystem.h; sourceTree = "<group>"; };
+		F68246402DB220EC004AAC26 /* FlockSystem.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = FlockSystem.cpp; sourceTree = "<group>"; };
+		F68246412DB220EC004AAC26 /* FoodManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FoodManager.h; sourceTree = "<group>"; };
+		F68246422DB220ED004AAC26 /* FoodManager.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = FoodManager.cpp; sourceTree = "<group>"; };
+		F68246432DB220ED004AAC26 /* FoodSource.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FoodSource.h; sourceTree = "<group>"; };
+		F68246442DB220ED004AAC26 /* FoodSource.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = FoodSource.cpp; sourceTree = "<group>"; };
+		F68246452DB220ED004AAC26 /* Genetics.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Genetics.h; sourceTree = "<group>"; };
+		F68246462DB220ED004AAC26 /* Genetics.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Genetics.cpp; sourceTree = "<group>"; };
+		F68246472DB220ED004AAC26 /* LifeCycle.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = LifeCycle.h; sourceTree = "<group>"; };
+		F68246482DB220ED004AAC26 /* LifeCycle.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LifeCycle.cpp; sourceTree = "<group>"; };
+		F68246492DB220ED004AAC26 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		F682464A2DB220ED004AAC26 /* Octree.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Octree.h; sourceTree = "<group>"; };
+		F682464B2DB220ED004AAC26 /* Octree.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Octree.cpp; sourceTree = "<group>"; };
+		F682464C2DB220ED004AAC26 /* ofApp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ofApp.h; sourceTree = "<group>"; };
+		F682464D2DB220ED004AAC26 /* ofApp.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ofApp.cpp; sourceTree = "<group>"; };
+		F682464E2DB220ED004AAC26 /* Particle.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Particle.h; sourceTree = "<group>"; };
+		F682464F2DB220ED004AAC26 /* Particle.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Particle.cpp; sourceTree = "<group>"; };
+		F68246502DB220ED004AAC26 /* Species.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Species.h; sourceTree = "<group>"; };
+		F68246512DB220ED004AAC26 /* Species.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Species.cpp; sourceTree = "<group>"; };
+		F68246522DB220ED004AAC26 /* TerrainSystem.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TerrainSystem.h; sourceTree = "<group>"; };
+		F68246532DB220ED004AAC26 /* TerrainSystem.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TerrainSystem.cpp; sourceTree = "<group>"; };
 		F6F3C3302D8F993400F06A22 /* Boid.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Boid.h; sourceTree = "<group>"; };
 		F6F3C3312D8F993400F06A22 /* Boid.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Boid.cpp; sourceTree = "<group>"; };
 		F6F3C3322D8F993400F06A22 /* ConfigManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ConfigManager.h; sourceTree = "<group>"; };
@@ -394,6 +436,34 @@
 		E4B69E1C0A3A1BDC003C02F2 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				F68246382DB220EC004AAC26 /* Boid.h */,
+				F68246392DB220EC004AAC26 /* Boid.cpp */,
+				F682463A2DB220EC004AAC26 /* ConfigManager.h */,
+				F682463B2DB220EC004AAC26 /* ConfigManager.cpp */,
+				F682463C2DB220EC004AAC26 /* EcosystemTypes.h */,
+				F682463D2DB220EC004AAC26 /* EventManager.h */,
+				F682463E2DB220EC004AAC26 /* EventManager.cpp */,
+				F682463F2DB220EC004AAC26 /* FlockSystem.h */,
+				F68246402DB220EC004AAC26 /* FlockSystem.cpp */,
+				F68246412DB220EC004AAC26 /* FoodManager.h */,
+				F68246422DB220ED004AAC26 /* FoodManager.cpp */,
+				F68246432DB220ED004AAC26 /* FoodSource.h */,
+				F68246442DB220ED004AAC26 /* FoodSource.cpp */,
+				F68246452DB220ED004AAC26 /* Genetics.h */,
+				F68246462DB220ED004AAC26 /* Genetics.cpp */,
+				F68246472DB220ED004AAC26 /* LifeCycle.h */,
+				F68246482DB220ED004AAC26 /* LifeCycle.cpp */,
+				F68246492DB220ED004AAC26 /* main.cpp */,
+				F682464A2DB220ED004AAC26 /* Octree.h */,
+				F682464B2DB220ED004AAC26 /* Octree.cpp */,
+				F682464C2DB220ED004AAC26 /* ofApp.h */,
+				F682464D2DB220ED004AAC26 /* ofApp.cpp */,
+				F682464E2DB220ED004AAC26 /* Particle.h */,
+				F682464F2DB220ED004AAC26 /* Particle.cpp */,
+				F68246502DB220ED004AAC26 /* Species.h */,
+				F68246512DB220ED004AAC26 /* Species.cpp */,
+				F68246522DB220ED004AAC26 /* TerrainSystem.h */,
+				F68246532DB220ED004AAC26 /* TerrainSystem.cpp */,
 				E4B69E1D0A3A1BDC003C02F2 /* main.cpp */,
 				E4B69E1E0A3A1BDC003C02F2 /* ofApp.cpp */,
 				E4B69E1F0A3A1BDC003C02F2 /* ofApp.h */,
@@ -553,6 +623,20 @@
 				"1B0A336F-904E-402A-B3C3-43448150406A" /* ofxPanel.cpp in Sources */,
 				"376079A9-0746-448A-B3A9-C3D3A1D60A0A" /* ofxSlider.cpp in Sources */,
 				"2CFA1686-BBAE-4846-8356-78B468C40C48" /* ofxSliderGroup.cpp in Sources */,
+				F68246542DB220ED004AAC26 /* Particle.cpp in Sources */,
+				F68246552DB220ED004AAC26 /* ConfigManager.cpp in Sources */,
+				F68246562DB220ED004AAC26 /* Genetics.cpp in Sources */,
+				F68246572DB220ED004AAC26 /* Species.cpp in Sources */,
+				F68246582DB220ED004AAC26 /* TerrainSystem.cpp in Sources */,
+				F68246592DB220ED004AAC26 /* FoodManager.cpp in Sources */,
+				F682465A2DB220ED004AAC26 /* EventManager.cpp in Sources */,
+				F682465B2DB220ED004AAC26 /* Boid.cpp in Sources */,
+				F682465C2DB220ED004AAC26 /* Octree.cpp in Sources */,
+				F682465D2DB220ED004AAC26 /* FoodSource.cpp in Sources */,
+				F682465E2DB220ED004AAC26 /* main.cpp in Sources */,
+				F682465F2DB220ED004AAC26 /* ofApp.cpp in Sources */,
+				F68246602DB220ED004AAC26 /* LifeCycle.cpp in Sources */,
+				F68246612DB220ED004AAC26 /* FlockSystem.cpp in Sources */,
 				"A3C01581-94E9-420F-A285-318C00CCBA32" /* ofxToggle.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

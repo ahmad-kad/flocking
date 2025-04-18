@@ -312,20 +312,13 @@ void FlockSystem::addBoids(int count, ofVec3f position, float spreadRadius) {
         float angle = ofRandom(TWO_PI);
         float radius = ofRandom(spreadRadius);
         float x = position.x + radius * cos(angle);
-        float y = position.y + ofRandom(-spreadRadius/2, spreadRadius/2);
         float z = position.z + radius * sin(angle);
-        newBoid->position = ofVec3f(x, y, z);
         
-        // Set initial velocity
-        newBoid->velocity = ofVec3f(ofRandom(-1, 1), ofRandom(-1, 1), ofRandom(-1, 1));
-        newBoid->velocity.normalize();
-        newBoid->velocity *= ofRandom(0.5, 1.0);
+        // Set height based on movement type and terrain
+        float terrainHeight = 0;
+        float heightOffset = 0;
         
-        // Assign properties based on boid variability
-        newBoid->uniqueness = ofRandom(0.1, 0.9) * boidsVariability;
-        newBoid->size = ofRandom(0.8, 1.2);
-        
-        // Randomly assign trophic levels with appropriate distribution
+        // Determine random trophic level with appropriate distribution
         float randVal = ofRandom(1.0f);
         if (randVal < 0.05f) {
             // 5% chance for apex predator
@@ -371,13 +364,43 @@ void FlockSystem::addBoids(int count, ofVec3f position, float spreadRadius) {
             }
         }
         
-        // Set basic flocking parameters
+        // Get terrain height if terrain system is available
+        if (terrainSystem) {
+            terrainHeight = terrainSystem->getHeightAt(x, z);
+        }
+        
+        // Set height based on movement type
         if (newBoid->movementType == MovementType::AERIAL) {
+            // Flying creatures spawn higher
+            heightOffset = terrainHeight + 2.0f + ofRandom(3.0f, 6.0f);
+        } else {
+            // Terrestrial creatures spawn just above terrain
+            heightOffset = terrainHeight + 0.5f + ofRandom(0.2f, 1.0f);
+        }
+        
+        // Set position with appropriate height
+        float y = heightOffset;
+        newBoid->position = ofVec3f(x, y, z);
+        
+        // Set initial velocity with horizontal bias for terrestrial creatures
+        if (newBoid->movementType == MovementType::AERIAL) {
+            newBoid->velocity = ofVec3f(ofRandom(-1, 1), ofRandom(-0.5, 0.5), ofRandom(-1, 1));
             newBoid->maxSpeed = maxSpeed * 1.2f;
         } else {
+            // More horizontal movement for terrestrial creatures
+            newBoid->velocity = ofVec3f(ofRandom(-1, 1), 0, ofRandom(-1, 1));
             newBoid->maxSpeed = maxSpeed * 0.8f;
         }
         
+        newBoid->velocity.normalize();
+        newBoid->velocity *= ofRandom(0.5, 1.0);
+        
+        // Assign properties based on boid variability
+        newBoid->uniqueness = ofRandom(0.1, 0.9) * boidsVariability;
+        newBoid->size = ofRandom(0.8, 1.2);
+        newBoid->energyLevel = ofRandom(0.7, 1.3);
+        
+        // Set minimum speed relative to max speed
         newBoid->minSpeed = minSpeed;
         newBoid->maxForce = maxForce;
         newBoid->neighborhoodRadius = neighborhoodRadius;

@@ -388,12 +388,15 @@ float TerrainSystem::getCoverDensity(const ofVec3f& position, float radius) {
 void TerrainSystem::draw() const {
     ofPushStyle();
     
-    // Draw terrain as a mesh
+    // Draw terrain as a mesh with reduced resolution for better performance
     ofMesh terrainMesh;
     terrainMesh.setMode(OF_PRIMITIVE_TRIANGLES);
     
-    for (int x = 0; x < width - 1; x++) {
-        for (int z = 0; z < height - 1; z++) {
+    // Determine step size based on terrain size for performance
+    int step = max(1, width / 128); // Adapt mesh density based on terrain size
+    
+    for (int x = 0; x < width - step; x += step) {
+        for (int z = 0; z < height - step; z += step) {
             // Calculate world positions for the four corners of this grid cell
             ofVec3f v1(
                 x * cellSize - (width * cellSize) / 2.0f,
@@ -402,28 +405,28 @@ void TerrainSystem::draw() const {
             );
             
             ofVec3f v2(
-                (x + 1) * cellSize - (width * cellSize) / 2.0f,
-                cells[x + 1][z].height,
+                (x + step) * cellSize - (width * cellSize) / 2.0f,
+                cells[x + step][z].height,
                 z * cellSize - (height * cellSize) / 2.0f
             );
             
             ofVec3f v3(
-                (x + 1) * cellSize - (width * cellSize) / 2.0f,
-                cells[x + 1][z + 1].height,
-                (z + 1) * cellSize - (height * cellSize) / 2.0f
+                (x + step) * cellSize - (width * cellSize) / 2.0f,
+                cells[x + step][z + step].height,
+                (z + step) * cellSize - (height * cellSize) / 2.0f
             );
             
             ofVec3f v4(
                 x * cellSize - (width * cellSize) / 2.0f,
-                cells[x][z + 1].height,
-                (z + 1) * cellSize - (height * cellSize) / 2.0f
+                cells[x][z + step].height,
+                (z + step) * cellSize - (height * cellSize) / 2.0f
             );
             
             // Get colors for each cell
             ofColor c1 = getTerrainColor(cells[x][z]);
-            ofColor c2 = getTerrainColor(cells[x + 1][z]);
-            ofColor c3 = getTerrainColor(cells[x + 1][z + 1]);
-            ofColor c4 = getTerrainColor(cells[x][z + 1]);
+            ofColor c2 = getTerrainColor(cells[x + step][z]);
+            ofColor c3 = getTerrainColor(cells[x + step][z + step]);
+            ofColor c4 = getTerrainColor(cells[x][z + step]);
             
             // Add triangles (two per grid cell)
             terrainMesh.addVertex(v1);
@@ -445,7 +448,17 @@ void TerrainSystem::draw() const {
         }
     }
     
-    terrainMesh.draw();
+    // Enable smooth lighting for better visuals
+    ofEnableLighting();
+    ofLight light;
+    light.setPosition(0, maxHeight * 2, 0);
+    light.enable();
+    
+    terrainMesh.enableNormals();
+    terrainMesh.drawFaces();
+    
+    light.disable();
+    ofDisableLighting();
     
     ofPopStyle();
 }
@@ -495,20 +508,63 @@ ofColor TerrainSystem::getTerrainColor(const TerrainCell& cell) const {
     
     switch (cell.type) {
         case TerrainType::WATER:
-            color = ofColor(0, 50, 200); // Blue
+            // Water: deeper blue for deeper water
+            {
+                float depth = (waterLevel - cell.height) / waterLevel;
+                depth = ofClamp(depth, 0.0f, 1.0f);
+                color = ofColor(10, 50 + depth * 100, 150 + depth * 100);
+            }
             break;
+            
         case TerrainType::FOREST:
-            color = ofColor(0, 100 + cell.vegetation * 100, 0); // Green
+            // Forest: dark green with some variation based on height and vegetation
+            color = ofColor(
+                ofClamp(20 + cell.height * 1.5f, 20, 60),
+                ofClamp(80 + cell.vegetation * 80, 80, 160),
+                ofClamp(20 + cell.height * 1.2f, 20, 80)
+            );
             break;
+            
         case TerrainType::MOUNTAIN:
-            color = ofColor(100 + cell.height * 5, 100 + cell.height * 5, 100 + cell.height * 5); // Gray
+            // Mountain: gray with snow on top
+            {
+                float snowFactor = (cell.height / maxHeight) > 0.8f ? 
+                    (cell.height - maxHeight * 0.8f) / (maxHeight * 0.2f) : 0.0f;
+                    
+                color = ofColor(
+                    ofClamp(100 + cell.height * 3 + snowFactor * 155, 100, 255),
+                    ofClamp(100 + cell.height * 3 + snowFactor * 155, 100, 255),
+                    ofClamp(110 + cell.height * 3 + snowFactor * 145, 110, 255)
+                );
+            }
             break;
+            
         case TerrainType::CAVE:
-            color = ofColor(100, 50, 0); // Brown
+            // Cave: dark brown
+            color = ofColor(
+                ofClamp(80 + cell.height * 1.0f, 80, 120),
+                ofClamp(40 + cell.height * 0.5f, 40, 70),
+                ofClamp(10 + cell.height * 0.5f, 10, 40)
+            );
             break;
+            
         case TerrainType::OPEN_FIELD:
-            // Blend between brown and green based on vegetation
-            color = ofColor(150, 120, 50).getLerped(ofColor(100, 200, 50), cell.vegetation);
+            // Open field: blend between yellow-brown and green based on vegetation
+            {
+                ofColor grassColor = ofColor(
+                    ofClamp(50 + (1.0f - cell.vegetation) * 50, 50, 100),
+                    ofClamp(120 + cell.vegetation * 100, 120, 220),
+                    ofClamp(30 + cell.vegetation * 60, 30, 90)
+                );
+                
+                ofColor dirtColor = ofColor(
+                    ofClamp(120 + cell.height * 5, 120, 180),
+                    ofClamp(100 + cell.height * 3, 100, 150),
+                    ofClamp(50 + cell.height * 2, 50, 80)
+                );
+                
+                color = dirtColor.getLerped(grassColor, cell.vegetation);
+            }
             break;
     }
     
