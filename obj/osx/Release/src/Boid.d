@@ -429,7 +429,15 @@ obj/osx/Release/src/Boid.o: \
   /Users/ahmadkaddoura/Downloads/of_v0.12.0_osx_release/libs/openFrameworks/3d/of3dUtils.h \
   /Users/ahmadkaddoura/Downloads/of_v0.12.0_osx_release/libs/openFrameworks/3d/ofCamera.h \
   /Users/ahmadkaddoura/Downloads/of_v0.12.0_osx_release/libs/openFrameworks/3d/ofEasyCam.h \
-  /Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/Particle.h
+  /Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/Particle.h \
+  /Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/EcosystemTypes.h \
+  /Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/Genetics.h \
+  /Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/LifeCycle.h \
+  /Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/Species.h \
+  /Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/Octree.h \
+  /Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/FoodSource.h \
+  /Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/FlockSystem.h \
+  /Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/TerrainSystem.h
 /Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/Boid.h:
 /Users/ahmadkaddoura/Downloads/of_v0.12.0_osx_release/libs/openFrameworks/ofMain.h:
 /Users/ahmadkaddoura/Downloads/of_v0.12.0_osx_release/libs/openFrameworks/utils/ofConstants.h:
@@ -860,3 +868,11 @@ obj/osx/Release/src/Boid.o: \
 /Users/ahmadkaddoura/Downloads/of_v0.12.0_osx_release/libs/openFrameworks/3d/ofCamera.h:
 /Users/ahmadkaddoura/Downloads/of_v0.12.0_osx_release/libs/openFrameworks/3d/ofEasyCam.h:
 /Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/Particle.h:
+/Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/EcosystemTypes.h:
+/Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/Genetics.h:
+/Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/LifeCycle.h:
+/Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/Species.h:
+/Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/Octree.h:
+/Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/FoodSource.h:
+/Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/FlockSystem.h:
+/Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/TerrainSystem.h:

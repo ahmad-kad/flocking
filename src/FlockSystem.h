@@ -2,6 +2,7 @@
 
 #include "ofMain.h"
 #include "Boid.h"
+#include "TerrainSystem.h"
 
 // Spatial grid cell
 struct Cell {
@@ -52,14 +53,18 @@ public:
     void setBoidsVariability(float variability); // 0-1, differences
     void setColorBasedFlocking(bool enabled, float threshold, float influence = 0);
     
+    // Terrain integration
+    void setTerrainSystem(TerrainSystem* terrain) { terrainSystem = terrain; }
+    TerrainSystem* getTerrainSystem() { return terrainSystem; }
+    
     // Boundary settings
     void setBounds(ofVec3f min, ofVec3f max);
+    void getBounds(ofVec3f& min, ofVec3f& max);
     ofVec3f boundaryForce(Boid& boid);
     float boundaryForceWeight;
     float boundaryDistance;
     void applySmoothedFlockingBehavior(Boid* boid, vector<Boid*>& neighbors);
     void adjustForcesForFlockMode(Boid* boid);
-    
     
     // Target seeking
     void setTarget(ofVec3f target);
@@ -74,6 +79,17 @@ public:
     bool showForces;
     bool showGrid;
     
+    // Flock analysis helpers
+    ofVec3f findFlockCenter(Boid* boid, float radius);
+    int countNearbyFlockmates(Boid* boid, float radius);
+    
+    // Default parameters for boids
+    float maxSpeed;
+    float minSpeed;
+    float maxForce;
+    float neighborhoodRadius;
+    float separationRadius;
+    
 private:
     vector<Boid*> boids;
     
@@ -82,6 +98,9 @@ private:
     float individualismFactor;
     float systemChaos;
     float boidsVariability;
+    
+    // Terrain system
+    TerrainSystem* terrainSystem = nullptr;
     
     // Color-based settings
     bool colorBasedFlockingEnabled;

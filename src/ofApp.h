@@ -2,8 +2,10 @@
 
 #include "ofMain.h"
 #include "ofxGui.h"
-#include "FlockSystem.h"
 #include "ConfigManager.h"
+#include "FlockSystem.h"
+#include "TerrainSystem.h"
+#include "FoodManager.h"
 #include "ofxAssimpModelLoader.h"
 
 class ofApp : public ofBaseApp{
@@ -34,9 +36,14 @@ class ofApp : public ofBaseApp{
 		ofxPanel environmentGui;
 		ofxPanel debugGui;
 		ofxPanel presetsGui;
+		ofxPanel foodSystemGui;
 		
-		// Flocking system
+		// Core systems
 		FlockSystem flockSystem;
+		TerrainSystem terrainSystem;
+		FoodManager foodManager;
+		ConfigManager configManager;
+		
 		bool simulationPaused;
 		
 		// Basic flocking parameters
@@ -68,12 +75,21 @@ class ofApp : public ofBaseApp{
 		ofxFloatSlider colorInfluence;
 		ofxFloatSlider colorSimilarityThreshold;
 		
+		// Food system parameters
+		ofxIntSlider plantFoodCount;
+		ofxIntSlider insectSwarmCount;
+		ofxFloatSlider plantRegenerationRate;
+		ofxFloatSlider insectRegenerationRate;
+		ofxButton resetFoodButton;
+		
 		// Debug visualization
 		ofxToggle showDebug;
 		ofxToggle showVelocities;
 		ofxToggle showNeighborhoods;
 		ofxToggle showForces;
 		ofxToggle showGrid;
+		ofxToggle showTerrainDebug;
+		ofxToggle showFood;
 		
 		// Environment parameters
 		ofParameter<ofColor> backgroundColor;
@@ -93,7 +109,6 @@ class ofApp : public ofBaseApp{
 		float targetTime;
         
         // Preset management
-        ConfigManager configManager;
         ofParameter<string> presetNameParam;
         ofxLabel presetLabel;
         vector<string> presetNames;
@@ -110,6 +125,7 @@ class ofApp : public ofBaseApp{
 		void updateFlockMode();
 		string getFlockModeDescription(int mode);
 		void updateBoidParameters();
+		void resetFoodSystem();
         
         // Preset methods
         void loadPreset();

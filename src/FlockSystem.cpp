@@ -39,6 +39,13 @@ FlockSystem::FlockSystem() {
     systemChaos = 0.0;
     boidsVariability = 0.5;
     
+    // Initialize default boid parameters
+    maxSpeed = 2.0f;
+    minSpeed = 0.5f;
+    maxForce = 0.5f;
+    neighborhoodRadius = 20.0f;
+    separationRadius = 10.0f;
+    
     // Set color-based flocking
     colorBasedFlockingEnabled = false;
     colorInfluenceFactor = 0.5;
@@ -298,27 +305,86 @@ void FlockSystem::addBoid(Boid* boid) {
 
 void FlockSystem::addBoids(int count, ofVec3f position, float spreadRadius) {
     for (int i = 0; i < count; i++) {
-        Boid* boid = new Boid();
+        // Create new boid
+        Boid* newBoid = new Boid();
         
-        // Set random position
-        ofVec3f randomOffset = ofVec3f(
-            ofRandom(-spreadRadius, spreadRadius),
-            ofRandom(-spreadRadius, spreadRadius),
-            ofRandom(-spreadRadius, spreadRadius)
-        );
-        boid->position = position + randomOffset;
+        // Set random position within spread radius
+        float angle = ofRandom(TWO_PI);
+        float radius = ofRandom(spreadRadius);
+        float x = position.x + radius * cos(angle);
+        float y = position.y + ofRandom(-spreadRadius/2, spreadRadius/2);
+        float z = position.z + radius * sin(angle);
+        newBoid->position = ofVec3f(x, y, z);
         
-        // Set random velocity
-        boid->velocity = ofVec3f(
-            ofRandom(-0.1, 0.1),
-            ofRandom(-0.1, 0.1),
-            ofRandom(-0.1, 0.1)
-        );
-        boid->velocity.normalize();
-        boid->velocity *= ofRandom(boid->minSpeed * 0.5, boid->maxSpeed * 0.5);
+        // Set initial velocity
+        newBoid->velocity = ofVec3f(ofRandom(-1, 1), ofRandom(-1, 1), ofRandom(-1, 1));
+        newBoid->velocity.normalize();
+        newBoid->velocity *= ofRandom(0.5, 1.0);
         
-        // Add to flock
-        addBoid(boid);
+        // Assign properties based on boid variability
+        newBoid->uniqueness = ofRandom(0.1, 0.9) * boidsVariability;
+        newBoid->size = ofRandom(0.8, 1.2);
+        
+        // Randomly assign trophic levels with appropriate distribution
+        float randVal = ofRandom(1.0f);
+        if (randVal < 0.05f) {
+            // 5% chance for apex predator
+            newBoid->trophicLevel = TrophicLevel::APEX_PREDATOR;
+            newBoid->personalColor = ofColor(200, 0, 0); // Red for apex predators
+            newBoid->size *= 1.3f;
+            
+            // Apex predators are typically aerial
+            if (ofRandom(1.0f) < 0.7f) {
+                newBoid->movementType = MovementType::AERIAL;
+            }
+        } 
+        else if (randVal < 0.2f) {
+            // 15% chance for mid-level predator
+            newBoid->trophicLevel = TrophicLevel::MID_PREDATOR;
+            newBoid->personalColor = ofColor(200, 100, 0); // Orange for mid predators
+            newBoid->size *= 1.1f;
+            
+            // Mixed movement types for mid predators
+            if (ofRandom(1.0f) < 0.5f) {
+                newBoid->movementType = MovementType::AERIAL;
+            }
+        }
+        else if (randVal < 0.3f) {
+            // 10% chance for apex prey (larger herbivores)
+            newBoid->trophicLevel = TrophicLevel::APEX_PREY;
+            newBoid->personalColor = ofColor(100, 200, 255); // Light blue for apex prey
+            newBoid->size *= 1.2f;
+            
+            // Apex prey are typically terrestrial
+            newBoid->movementType = MovementType::TERRESTRIAL;
+        }
+        else {
+            // 70% chance for regular prey
+            newBoid->trophicLevel = TrophicLevel::PREY;
+            newBoid->personalColor = ofColor(0, 200, 100); // Green for prey
+            
+            // Mixed movement types for regular prey
+            if (ofRandom(1.0f) < 0.3f) {
+                newBoid->movementType = MovementType::AERIAL;
+            } else {
+                newBoid->movementType = MovementType::TERRESTRIAL;
+            }
+        }
+        
+        // Set basic flocking parameters
+        if (newBoid->movementType == MovementType::AERIAL) {
+            newBoid->maxSpeed = maxSpeed * 1.2f;
+        } else {
+            newBoid->maxSpeed = maxSpeed * 0.8f;
+        }
+        
+        newBoid->minSpeed = minSpeed;
+        newBoid->maxForce = maxForce;
+        newBoid->neighborhoodRadius = neighborhoodRadius;
+        newBoid->separationRadius = separationRadius;
+        
+        // Add to system
+        addBoid(newBoid);
     }
 }
 
@@ -450,6 +516,18 @@ void FlockSystem::setBoidsVariability(float variability) {
 void FlockSystem::setBounds(ofVec3f min, ofVec3f max) {
     boundsMin = min;
     boundsMax = max;
+    
+    // Update grid bounds
+    gridMin = min;
+    gridMax = max;
+    
+    // Rebuild grid
+    updateSpatialGrid();
+}
+
+void FlockSystem::getBounds(ofVec3f& min, ofVec3f& max) {
+    min = boundsMin;
+    max = boundsMax;
 }
 
 ofVec3f FlockSystem::boundaryForce(Boid& boid) {

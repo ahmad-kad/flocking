@@ -48,6 +48,7 @@ void ofApp::setup(){
 	environmentGui.add(spawnBoidsButton.setup("Spawn Boids"));
 	environmentGui.add(spawnCount.setup("Spawn Count", 10, 1, 100));
 	environmentGui.add(loadMeshButton.setup("Load Boid Mesh"));
+    environmentGui.add(showTerrainDebug.setup("Show Terrain Debug", false));
 	
 	// Debug visualization GUI
 	debugGui.setup("Debug View");
@@ -56,6 +57,15 @@ void ofApp::setup(){
 	debugGui.add(showNeighborhoods.setup("Show Neighborhoods", false));
 	debugGui.add(showForces.setup("Show Forces", false));
 	debugGui.add(showGrid.setup("Show Grid", false));
+    debugGui.add(showFood.setup("Show Food", true));
+    
+    // Food system GUI
+    foodSystemGui.setup("Food System");
+    foodSystemGui.add(plantFoodCount.setup("Plant Food", 50, 0, 200));
+    foodSystemGui.add(insectSwarmCount.setup("Insect Swarms", 30, 0, 100));
+    foodSystemGui.add(plantRegenerationRate.setup("Plant Regen Rate", 1.0, 0.1, 3.0));
+    foodSystemGui.add(insectRegenerationRate.setup("Insect Regen Rate", 1.5, 0.1, 3.0));
+    foodSystemGui.add(resetFoodButton.setup("Reset Food System"));
 	
     // Presets GUI
     presetsGui.setup("Presets");
@@ -85,6 +95,7 @@ void ofApp::setup(){
 	loadMeshButton.addListener(this, &ofApp::loadBoidMesh);
     loadPresetButton.addListener(this, &ofApp::loadPreset);
     savePresetButton.addListener(this, &ofApp::savePreset);
+    resetFoodButton.addListener(this, &ofApp::resetFoodSystem);
 	
 	bHide = false;
 	simulationPaused = false;
@@ -93,6 +104,19 @@ void ofApp::setup(){
 	
 	// Initialize flocking system
 	flockSystem.addBoids(boidCount, ofVec3f(0, 0, 0), 5.0);
+    
+    // Initialize terrain system
+    terrainSystem.setup(256, 256, 0.5);
+    terrainSystem.generateTerrain(10.0f, 0.5f);
+    
+    // Set terrain in flock system
+    flockSystem.setTerrainSystem(&terrainSystem);
+    
+    // Initialize food manager with terrain reference
+    foodManager.setTerrain(&terrainSystem);
+    
+    // Setup food system with initial food
+    resetFoodSystem();
 	
 	// Initialize target parameters
 	targetPosition = ofVec3f(0, 0, 0);
@@ -154,7 +178,10 @@ void ofApp::update() {
             // Circular target movement
             float x = cos(targetTime) * targetPathRadius;
             float z = sin(targetTime) * targetPathRadius;
-            targetPosition = ofVec3f(x, 0, z);
+            
+            // Set target height based on terrain
+            float y = terrainSystem.getHeightAt(x, z) + 2.0f; // Hover above terrain
+            targetPosition = ofVec3f(x, y, z);
         }
         
         // Set target for flock
@@ -173,6 +200,51 @@ void ofApp::update() {
         if (boid->position.length() > maxDistance) {
             boidsToRemove.push_back(boid);
         }
+        
+        // Update boid height based on terrain if it's a terrestrial creature
+        if (boid->movementType == MovementType::TERRESTRIAL) {
+            float terrainHeight = terrainSystem.getHeightAt(boid->position.x, boid->position.z);
+            boid->position.y = terrainHeight + (boid->radius * 0.5f); // Slightly above terrain
+        }
+        
+        // Search for food if needed
+        if (boid->lifecycle.hungerLevel > 0.5f) {
+            // Only search for food at intervals to reduce computational load
+            if (ofRandom(1.0) < 0.05) {
+                std::vector<FoodSource*> accessibleFood = foodManager.findAccessibleFood(boid, neighborhoodRadius * 2.0f);
+                
+                if (!accessibleFood.empty()) {
+                    // Get the closest food
+                    FoodSource* closestFood = nullptr;
+                    float minDist = FLT_MAX;
+                    
+                    for (auto* food : accessibleFood) {
+                        float dist = boid->position.distance(food->position);
+                        if (dist < minDist) {
+                            minDist = dist;
+                            closestFood = food;
+                        }
+                    }
+                    
+                    // If close enough, consume the food
+                    if (minDist < boid->radius * 2.0f) {
+                        foodManager.consumeFood(boid, closestFood);
+                    }
+                    else {
+                        // Otherwise, set it as the target for seeking behavior
+                        boid->currentFood = closestFood;
+                        boid->behaviorState = BehaviorState::FEEDING;
+                    }
+                }
+            }
+        }
+        else {
+            // Reset feeding state if no longer hungry
+            if (boid->behaviorState == BehaviorState::FEEDING) {
+                boid->behaviorState = BehaviorState::NORMAL;
+                boid->currentFood = nullptr;
+            }
+        }
     }
     
     // Remove and replace boids if needed
@@ -184,6 +256,13 @@ void ofApp::update() {
         // Spawn replacements
         flockSystem.addBoids(boidsToRemove.size(), ofVec3f(0, 0, 0), 3.0);
     }
+    
+    // Update food system parameters
+    foodManager.plantRegenerationRate = plantRegenerationRate;
+    foodManager.insectRegenerationRate = insectRegenerationRate;
+    
+    // Update food system
+    foodManager.update(ofGetLastFrameTime());
     
     // Update the flocking system
     flockSystem.update();
@@ -201,35 +280,42 @@ void ofApp::draw(){
 		environmentGui.draw();
 		debugGui.draw();
         presetsGui.draw();
+        foodSystemGui.draw();
 	}
 
 	// Begin camera drawing
 	cam.begin();
+	ofEnableDepthTest();
 
-	// Draw grid
-	ofPushMatrix();
-	ofRotateDeg(90, 0, 0, 1);
-	ofSetLineWidth(1);
-	ofSetColor(ofColor::dimGrey);
-	ofDrawGridPlane();
-	ofPopMatrix();
+	// Draw terrain
+	terrainSystem.draw();
+	if (showTerrainDebug) {
+		terrainSystem.drawDebug();
+	}
+
+	// Draw food
+	if (showFood) {
+		foodManager.draw();
+	}
 
 	// Draw flocking system
 	if (customMeshLoaded) {
 		flockSystem.draw(&boidMesh);
 	} else {
-		flockSystem.draw(nullptr);
+		flockSystem.draw();
 	}
 	
 	// Draw target if enabled
 	if (targetEnabled) {
 		ofPushStyle();
-		ofSetColor(ofColor::red);
-		ofDrawSphere(targetPosition, 0.3);
+		ofSetColor(255, 100, 100);
+		ofDrawSphere(targetPosition, 0.5);
+		ofSetColor(255, 100, 100, 100);
+		ofDrawSphere(targetPosition, 1.0);
 		ofPopStyle();
 	}
 
-	// End camera drawing 
+	ofDisableDepthTest();
 	cam.end();
 
 	// Draw screen data
@@ -295,15 +381,21 @@ void ofApp::draw(){
 
 //--------------------------------------------------------------
 void ofApp::resetSimulation() {
-	// Clear all boids
+	// Clear boids
 	flockSystem.clear();
 	
-	// Add new boids based on current count
+	// Add new boids
 	flockSystem.addBoids(boidCount, ofVec3f(0, 0, 0), 5.0);
+	
+	// Reset food system
+	resetFoodSystem();
+	
+	// Reset terrain
+	terrainSystem.generateTerrain(10.0f, 0.5f);
 	
 	// Reset target
 	targetPosition = ofVec3f(0, 0, 0);
-	targetMoving = false;
+	targetTime = 0;
 }
 
 //--------------------------------------------------------------
@@ -697,4 +789,16 @@ void ofApp::updateBoidParameters() {
         boid->fieldOfView = fieldOfView;
         boid->turnRate = turnRate;
     }
+}
+
+void ofApp::resetFoodSystem() {
+    // Get the simulation bounds from the flock system
+    ofVec3f boundsMin, boundsMax;
+    flockSystem.getBounds(boundsMin, boundsMax);
+    
+    // Set bounds for food system
+    foodManager.setBounds(boundsMin, boundsMax);
+    
+    // Clear and reinitialize food sources
+    foodManager.setup(plantFoodCount, insectSwarmCount);
 }

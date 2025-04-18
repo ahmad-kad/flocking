@@ -441,10 +441,17 @@ obj/osx/Release/src/main.o: \
   /Users/ahmadkaddoura/Downloads/of_v0.12.0_osx_release/addons/ofxGui/src/ofxLabel.h \
   /Users/ahmadkaddoura/Downloads/of_v0.12.0_osx_release/addons/ofxGui/src/ofxColorPicker.h \
   /Users/ahmadkaddoura/Downloads/of_v0.12.0_osx_release/addons/ofxGui/src/ofxPanel.h \
+  /Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/ConfigManager.h \
   /Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/FlockSystem.h \
   /Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/Boid.h \
   /Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/Particle.h \
-  /Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/ConfigManager.h \
+  /Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/EcosystemTypes.h \
+  /Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/Genetics.h \
+  /Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/LifeCycle.h \
+  /Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/Species.h \
+  /Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/TerrainSystem.h \
+  /Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/FoodManager.h \
+  /Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/FoodSource.h \
   /Users/ahmadkaddoura/Downloads/of_v0.12.0_osx_release/addons/ofxAssimpModelLoader/src/ofxAssimpModelLoader.h \
   /Users/ahmadkaddoura/Downloads/of_v0.12.0_osx_release/addons/ofxAssimpModelLoader/src/ofxAssimpMeshHelper.h \
   /Users/ahmadkaddoura/Downloads/of_v0.12.0_osx_release/addons/ofxAssimpModelLoader/libs/assimp/include/assimp/cimport.h \
@@ -896,10 +903,17 @@ obj/osx/Release/src/main.o: \
 /Users/ahmadkaddoura/Downloads/of_v0.12.0_osx_release/addons/ofxGui/src/ofxLabel.h:
 /Users/ahmadkaddoura/Downloads/of_v0.12.0_osx_release/addons/ofxGui/src/ofxColorPicker.h:
 /Users/ahmadkaddoura/Downloads/of_v0.12.0_osx_release/addons/ofxGui/src/ofxPanel.h:
+/Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/ConfigManager.h:
 /Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/FlockSystem.h:
 /Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/Boid.h:
 /Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/Particle.h:
-/Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/ConfigManager.h:
+/Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/EcosystemTypes.h:
+/Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/Genetics.h:
+/Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/LifeCycle.h:
+/Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/Species.h:
+/Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/TerrainSystem.h:
+/Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/FoodManager.h:
+/Users/ahmadkaddoura/Desktop/CODE/216_flocking/src/FoodSource.h:
 /Users/ahmadkaddoura/Downloads/of_v0.12.0_osx_release/addons/ofxAssimpModelLoader/src/ofxAssimpModelLoader.h:
 /Users/ahmadkaddoura/Downloads/of_v0.12.0_osx_release/addons/ofxAssimpModelLoader/src/ofxAssimpMeshHelper.h:
 /Users/ahmadkaddoura/Downloads/of_v0.12.0_osx_release/addons/ofxAssimpModelLoader/libs/assimp/include/assimp/cimport.h:
