@@ -1,4 +1,9 @@
 #include "FlockSystem.h"
+#include "Boid.h"          // For Boid class
+#include "Octree.h"        // For spatial partitioning
+#include "TerrainSystem.h" // For terrain interactions
+#include "FoodManager.h"   // For food interactions
+#include "BoidRenderer.h"  // Include the new renderer
 
 FlockSystem::FlockSystem() {
     // Set up spatial grid
@@ -67,25 +72,14 @@ FlockSystem::~FlockSystem() {
     boids.clear();
 }
 
-
-
-void FlockSystem::draw(ofMesh* customMesh) {
-    // Render all boids
-    for (auto boid : boids) {
-        if (customMesh != nullptr) {
-            boid->draw(customMesh);
-        } else {
-            boid->draw();
-        }
-        
-        if (showDebug) {
-            boid->drawDebug(showVelocities, showNeighborhoods, showForces);
+void FlockSystem::draw(ofMesh* boidMesh) {
+    for (auto* boid : boids) {
+        if (boid->lifecycle.isAlive) {
+            BoidRenderer::draw(*boid, boidMesh); // Use BoidRenderer::draw
         }
     }
-    
-    // Draw boundaries
-    drawBoundaries();
 }
+
 
 void FlockSystem::update() {
     // Refresh spatial grid
@@ -241,8 +235,6 @@ void FlockSystem::applySmoothedFlockingBehavior(Boid* boid, vector<Boid*>& neigh
     boid->applyForce(boid->alignmentForce * boid->alignmentWeight);
     boid->applyForce(boid->cohesionForce * boid->cohesionWeight);
 }
-
-
 
 void FlockSystem::drawGrid() {
     if (!showGrid) return;

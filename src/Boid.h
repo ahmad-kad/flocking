@@ -6,6 +6,7 @@
 #include "Genetics.h"
 #include "LifeCycle.h"
 #include "Species.h"
+#include "BoidRenderer.h"
 
 // Forward declarations
 class TerrainSystem;
@@ -115,14 +116,14 @@ public:
     void update(float deltaTime, TerrainSystem* terrain, Octree* octree);
     void integrate();
     
-    // Rendering
-    void draw(ofMesh* customMesh = nullptr);
-    void drawDebug(bool showVelocity, bool showNeighborhood, bool showForces);
+    // Rendering is now handled by BoidRenderer
+    // void draw(ofMesh* customMesh = nullptr);
+    // void drawDebug(bool showVelocity, bool showNeighborhood, bool showForces);
     
     // Apply species parameters
     void applySpeciesParams(const Species& species);
     
-    // Debugging force vectors
+    // Debugging force vectors (accessible to BoidRenderer)
     ofVec3f separationForce;
     ofVec3f alignmentForce;
     ofVec3f cohesionForce;
@@ -133,6 +134,10 @@ public:
     // Parameter update
     void updateParameters();
     
-    // Predator-prey methods
-    void huntAsPredator(vector<Boid*>& potentialPrey);
+    // Predator-prey methods (ensure consistency, remove duplicate declaration if present)
+    // void huntAsPredator(vector<Boid*>& potentialPrey); // Remove if duplicate of line 70
+
+    // Friend class declaration allows BoidRenderer to access private/protected members if needed
+    // (Alternatively, make necessary members public or provide getter methods)
+    friend class BoidRenderer;
 }; 

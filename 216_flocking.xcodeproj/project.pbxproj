@@ -37,6 +37,7 @@
 		F682465F2DB220ED004AAC26 /* ofApp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F682464D2DB220ED004AAC26 /* ofApp.cpp */; };
 		F68246602DB220ED004AAC26 /* LifeCycle.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F68246482DB220ED004AAC26 /* LifeCycle.cpp */; };
 		F68246612DB220ED004AAC26 /* FlockSystem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F68246402DB220EC004AAC26 /* FlockSystem.cpp */; };
+		F6C11DF62DC0242400CDE3C1 /* BoidRenderer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F6C11DF52DC0242400CDE3C1 /* BoidRenderer.cpp */; };
 		F6F3C33B2D8F993400F06A22 /* FlockSystem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F6F3C3352D8F993400F06A22 /* FlockSystem.cpp */; };
 		F6F3C33C2D8F993400F06A22 /* ofApp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F6F3C3382D8F993400F06A22 /* ofApp.cpp */; };
 		F6F3C33D2D8F993400F06A22 /* Particle.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F6F3C33A2D8F993400F06A22 /* Particle.cpp */; };
@@ -209,6 +210,8 @@
 		F68246512DB220ED004AAC26 /* Species.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Species.cpp; sourceTree = "<group>"; };
 		F68246522DB220ED004AAC26 /* TerrainSystem.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TerrainSystem.h; sourceTree = "<group>"; };
 		F68246532DB220ED004AAC26 /* TerrainSystem.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TerrainSystem.cpp; sourceTree = "<group>"; };
+		F6C11DF42DC0242400CDE3C1 /* BoidRenderer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BoidRenderer.h; sourceTree = "<group>"; };
+		F6C11DF52DC0242400CDE3C1 /* BoidRenderer.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = BoidRenderer.cpp; sourceTree = "<group>"; };
 		F6F3C3302D8F993400F06A22 /* Boid.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Boid.h; sourceTree = "<group>"; };
 		F6F3C3312D8F993400F06A22 /* Boid.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Boid.cpp; sourceTree = "<group>"; };
 		F6F3C3322D8F993400F06A22 /* ConfigManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ConfigManager.h; sourceTree = "<group>"; };
@@ -440,6 +443,8 @@
 				F68246392DB220EC004AAC26 /* Boid.cpp */,
 				F682463A2DB220EC004AAC26 /* ConfigManager.h */,
 				F682463B2DB220EC004AAC26 /* ConfigManager.cpp */,
+				F6C11DF42DC0242400CDE3C1 /* BoidRenderer.h */,
+				F6C11DF52DC0242400CDE3C1 /* BoidRenderer.cpp */,
 				F682463C2DB220EC004AAC26 /* EcosystemTypes.h */,
 				F682463D2DB220EC004AAC26 /* EventManager.h */,
 				F682463E2DB220EC004AAC26 /* EventManager.cpp */,
@@ -624,6 +629,7 @@
 				"376079A9-0746-448A-B3A9-C3D3A1D60A0A" /* ofxSlider.cpp in Sources */,
 				"2CFA1686-BBAE-4846-8356-78B468C40C48" /* ofxSliderGroup.cpp in Sources */,
 				F68246542DB220ED004AAC26 /* Particle.cpp in Sources */,
+				F6C11DF62DC0242400CDE3C1 /* BoidRenderer.cpp in Sources */,
 				F68246552DB220ED004AAC26 /* ConfigManager.cpp in Sources */,
 				F68246562DB220ED004AAC26 /* Genetics.cpp in Sources */,
 				F68246572DB220ED004AAC26 /* Species.cpp in Sources */,
